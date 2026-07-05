@@ -16,6 +16,7 @@ class TokenType(Enum):
     LBRACKET = auto()
     RBRACKET = auto()
 
+    NEWLINE = auto()
     EOF = auto()
 
 
@@ -54,13 +55,9 @@ class Lexer:
                 self.column = line_length
 
     def __skip_whitespace(self) -> None:
-        while True:
-            if self.eof:
-                return
+        while not self.eof:
             char = self.__peek()
-            if char == "":
-                self.__advance()
-            elif char.isspace():
+            if char.isspace() and char != '\n':
                 self.__advance()
             else:
                 return
@@ -90,9 +87,10 @@ class Lexer:
     def __read_comment(self) -> None:
         while not self.eof and self.__peek() != "\n":
             self.__advance()
+        self.__advance()
 
     def evaluate(self) -> List[Token]:
-        output = list()
+        output: List[Token] = list()
         while not self.eof:
             self.__skip_whitespace()
             token_line = self.line
@@ -122,6 +120,12 @@ class Lexer:
                 output.append(
                     Token(TokenType.DASH, None, token_line, token_column)
                 )
+                self.__advance()
+            elif char == "\n":
+                if output and output[-1].type != TokenType.NEWLINE:
+                    output.append(
+                        Token(TokenType.NEWLINE, None, token_line, token_column)
+                    )
                 self.__advance()
             elif char == "#":
                 self.__read_comment()
