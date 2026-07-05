@@ -20,7 +20,7 @@ class TokenType(Enum):
     EOF = auto()
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class Token:
     type: TokenType
     value: str | int | None
