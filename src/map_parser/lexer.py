@@ -29,18 +29,18 @@ class Token:
 
 
 class Lexer:
-    def __init__(self, map: str):
-        self.lines = map.split("\n")
+    def __init__(self, input: str):
+        self.lines = input.split("\n")
         self.line = 1
         self.column = 1
         self.eof = False
 
-    def peek(self) -> str:
+    def __peek(self) -> str:
         if self.eof or not self.lines[self.line - 1]:
             return ""
         return self.lines[self.line - 1][self.column - 1]
 
-    def advance(self) -> None:
+    def __advance(self) -> None:
         assert not self.eof, "should not advance when at EOF"
         prev_line = self.line
         line_length = len(self.lines[self.line - 1])
@@ -53,88 +53,87 @@ class Lexer:
                 self.line = prev_line
                 self.column = line_length + 1
 
-    def skip_whitespace(self) -> None:
+    def __skip_whitespace(self) -> None:
         while True:
             if self.eof:
                 return
-            char = self.peek()
-            if not char or char.isspace():
-                self.advance()
+            char = self.__peek()
+            if char == "":
+                self.__advance()
+            elif char.isspace():
+                self.__advance()
             else:
                 return
 
-    def read_identifier(self) -> str:
+    def __read_identifier(self) -> str:
         identifier = ""
         while True:
-            char = self.peek()
+            char = self.__peek()
             if not char or char in " :[=-]":
                 break
             identifier += char
-            self.advance()
+            self.__advance()
         return identifier
 
-    def read_integer(self) -> int:
+    def __read_integer(self) -> int:
         integer = ""
         while True:
-            char = self.peek()
+            char = self.__peek()
             if not char or char in " :[=-]":
                 break
             if not char.isdecimal():
                 raise LexerError(self.line, self.column)
             integer += char
-            self.advance()
+            self.__advance()
         return int(integer)
 
-    def read_comment(self) -> None:
-        prev_line = self.line
-        self.line += 1
-        self.column = 1
-        if self.line > len(self.lines):
-            self.eof = True
-            self.line = prev_line
-            self.column = len(self.lines[self.line]) + 1
+    def __read_comment(self) -> None:
+        while self.__peek():
+            self.__advance()
+        if not self.eof:
+            self.__advance()
 
     def evaluate(self) -> List[Token]:
         output = list()
         while not self.eof:
-            self.skip_whitespace()
+            self.__skip_whitespace()
             token_line = self.line
             token_column = self.column
-            char = self.peek()
+            char = self.__peek()
             if char == ":":
                 output.append(
                     Token(TokenType.COLON, None, token_line, token_column)
                 )
-                self.advance()
+                self.__advance()
             elif char == "[":
                 output.append(
                     Token(TokenType.LBRACKET, None, token_line, token_column)
                 )
-                self.advance()
+                self.__advance()
             elif char == "]":
                 output.append(
                     Token(TokenType.RBRACKET, None, token_line, token_column)
                 )
-                self.advance()
+                self.__advance()
             elif char == "=":
                 output.append(
                     Token(TokenType.EQUALS, None, token_line, token_column)
                 )
-                self.advance()
+                self.__advance()
             elif char == "-":
                 output.append(
                     Token(TokenType.DASH, None, token_line, token_column)
                 )
-                self.advance()
+                self.__advance()
             elif char == "#":
-                self.read_comment()
+                self.__read_comment()
             elif char.isdigit():
-                integer = self.read_integer()
+                integer = self.__read_integer()
                 output.append(
                     Token(TokenType.INTEGER, integer, token_line, token_column)
                 )
             else:
-                identifier = self.read_identifier()
+                identifier = self.__read_identifier()
                 if not identifier:
                     break
                 output.append(
