@@ -30,7 +30,7 @@ class Token:
 
 class Lexer:
     def __init__(self, input: str):
-        self.lines = input.split("\n")
+        self.lines = [f"{l}\n" for l in input.split("\n")]
         self.line = 1
         self.column = 1
         self.eof = False
@@ -51,7 +51,7 @@ class Lexer:
             if self.line > len(self.lines):
                 self.eof = True
                 self.line = prev_line
-                self.column = line_length + 1
+                self.column = line_length
 
     def __skip_whitespace(self) -> None:
         while True:
@@ -69,7 +69,7 @@ class Lexer:
         identifier = ""
         while True:
             char = self.__peek()
-            if not char or char in " :[=-]":
+            if not char or char in " :[=-]\n":
                 break
             identifier += char
             self.__advance()
@@ -79,7 +79,7 @@ class Lexer:
         integer = ""
         while True:
             char = self.__peek()
-            if not char or char in " :[=-]":
+            if not char or char in " :[=-]\n":
                 break
             if not char.isdecimal():
                 raise LexerError(self.line, self.column)
@@ -88,9 +88,7 @@ class Lexer:
         return int(integer)
 
     def __read_comment(self) -> None:
-        while self.__peek():
-            self.__advance()
-        if not self.eof:
+        while not self.eof and self.__peek() != "\n":
             self.__advance()
 
     def evaluate(self) -> List[Token]:
