@@ -10,9 +10,12 @@ class Lexer:
         self.file_path = file_path
         self.line = 1
         self.column = 1
+        self.should_skip_whitespace = True
         self.eof = False
 
     def __peek(self) -> str:
+        if not self.lines:
+            return ""
         if self.eof or not self.lines[self.line - 1]:
             return ""
         return self.lines[self.line - 1][self.column - 1]
@@ -31,6 +34,8 @@ class Lexer:
                 self.column = line_length + 1
 
     def __skip_whitespace(self) -> None:
+        if not self.should_skip_whitespace:
+            return
         while not self.eof:
             char = self.__peek()
             if char.isspace() and char != "\n":
@@ -85,7 +90,14 @@ class Lexer:
             self.__skip_whitespace()
             token_location = Location(self.file_path, self.line, self.column)
             char = self.__peek()
-            if len(output) >= 2 and (
+            if char.isspace() and char != "\n":
+                raise LexingError(token_location, "Invalid Spacing")
+            if char.isdigit():
+                integer = self.__read_integer()
+                output.append(
+                    Token(TokenType.INTEGER, integer, token_location)
+                )
+            elif len(output) >= 2 and (
                 (
                     output[-2].type == TokenType.IDENTIFIER
                     and output[-1].type == TokenType.COLON
@@ -112,9 +124,13 @@ class Lexer:
             elif char == "-":
                 output.append(Token(TokenType.DASH, None, token_location))
                 self.__advance()
+                self.should_skip_whitespace = False
+                continue
             elif char == "+":
                 output.append(Token(TokenType.PLUS, None, token_location))
                 self.__advance()
+                self.should_skip_whitespace = False
+                continue
             elif char == "\n":
                 if output and output[-1].type != TokenType.NEWLINE:
                     output.append(
@@ -123,11 +139,6 @@ class Lexer:
                 self.__advance()
             elif char == "#":
                 self.__read_comment()
-            elif char.isdigit():
-                integer = self.__read_integer()
-                output.append(
-                    Token(TokenType.INTEGER, integer, token_location)
-                )
             else:
                 identifier = self.__read_identifier()
                 if not identifier:
@@ -135,6 +146,7 @@ class Lexer:
                 output.append(
                     Token(TokenType.IDENTIFIER, identifier, token_location)
                 )
+            self.should_skip_whitespace = True
         output.append(
             Token(
                 TokenType.EOF,
@@ -143,54 +155,3 @@ class Lexer:
             )
         )
         return output
-
-
-if __name__ == "__main__":
-
-    file_path = "maps/challenger/01_the_impossible_dream.txt"
-    try:
-        with open(file_path, "r") as f:
-            file_lines = f.readlines()
-    except FileNotFoundError:
-        raise ValueError("File Not Found")
-    except NotADirectoryError:
-        raise ValueError("Not A Directory")
-    except IsADirectoryError:
-        raise ValueError("Is A Directory")
-    except PermissionError:
-        raise ValueError("Permission Error")
-    except OSError as e:
-        raise ValueError(f"{e}")
-
-    lexer = Lexer(file_lines, file_path)
-    try:
-        tokens = lexer.evaluate()
-    except LexingError as e:
-        print(e)
-        exit()
-
-    from random import randint
-
-    # # print a random token from map
-    # token = tokens[randint(0, len(tokens) - 1)]
-    # print(token)
-
-    # # print last token
-    # token = tokens[-1]
-    # print(token)
-
-    # # print first token
-    # token = tokens[0]
-    # print(token)
-
-    # # print all tokens
-    # print(*tokens, sep="\n")
-
-    # print only NAME tokens
-    print(*[t for t in tokens if t.type == TokenType.NAME], sep="\n")
-
-    # # print only IDENTIFIER tokens
-    # print(*[t for t in tokens if t.type == TokenType.IDENTIFIER], sep="\n")
-
-    # # print only INTEGER tokens
-    # print(*[t for t in tokens if t.type == TokenType.INTEGER], sep="\n")

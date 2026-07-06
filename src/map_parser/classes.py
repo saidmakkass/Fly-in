@@ -50,6 +50,8 @@ class Zone:
     x: int
     y: int
 
+    location: Location
+
     type: str = "normal"
     color: str | None = None
     max_drones: int = 1
@@ -66,6 +68,8 @@ class Zone:
 class Connection:
     zone_a: str
     zone_b: str
+
+    location: Location
 
     max_link_capacity: int = 1
 
@@ -88,3 +92,14 @@ class Map:
     nb_drones: int
     zones: List[Zone]
     connections: List[Connection]
+
+    def __repr__(self) -> str:
+        zones = "\n".join([f"{z}" for z in self.zones])
+        cons = "\n".join([f"{c}" for c in self.connections])
+        return (
+            f"nb_drones = {self.nb_drones}\n"
+            "Zones:\n"
+            f"{zones}\n"
+            "Connections:\n"
+            f"{cons}"
+        )

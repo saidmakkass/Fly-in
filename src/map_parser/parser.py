@@ -1,6 +1,6 @@
-from typing import List, cast
+from typing import List, Tuple, cast
 
-from .classes import Token, TokenType, Zone, Connection, Map
+from .classes import Token, TokenType, Zone, Connection, Location
 from .errors import ParsingError
 
 
@@ -40,9 +40,15 @@ class Parser:
     def __parse_nb_drones(self) -> int:
         self.__expect(TokenType.IDENTIFIER, "nb_drones")
         self.__expect(TokenType.COLON)
-        return cast(int, self.__expect(TokenType.INTEGER).value)
+        if self.__peek().type == TokenType.PLUS:
+            self.__advance()
+        token = self.__expect(TokenType.INTEGER)
+        nb_drones = cast(int, token.value)
+        if nb_drones == 0:
+            raise ParsingError(token.location, "Non Positive Integer")
+        return nb_drones
 
-    def __parse_Zone(self, kind: str = "hub") -> Zone:
+    def __parse_Zone(self, zone_location: Location, kind: str = "hub") -> Zone:
         name: str
         x: int
         y: int
@@ -51,17 +57,21 @@ class Parser:
         max_drones: int = 1
 
         self.__expect(TokenType.COLON)
-        token = self.__expect(TokenType.IDENTIFIER)
+        token = self.__expect(TokenType.NAME)
         name = cast(str, token.value)
         if self.__peek().type == TokenType.DASH:
             self.__advance()
             x = cast(int, self.__expect(TokenType.INTEGER).value) * -1
         else:
+            if self.__peek().type == TokenType.PLUS:
+                self.__advance()
             x = cast(int, self.__expect(TokenType.INTEGER).value)
         if self.__peek().type == TokenType.DASH:
             self.__advance()
             y = cast(int, self.__expect(TokenType.INTEGER).value) * -1
         else:
+            if self.__peek().type == TokenType.PLUS:
+                self.__advance()
             y = cast(int, self.__expect(TokenType.INTEGER).value)
         if self.__peek().type == TokenType.LBRACKET:
             self.__advance()
@@ -71,13 +81,7 @@ class Parser:
                     case "zone":
                         self.__expect(TokenType.EQUALS)
                         token = self.__expect(TokenType.IDENTIFIER)
-                        try:
-                            zone_type = cast(str, token.value)
-                        except KeyError:
-                            raise ParsingError(
-                                token.location,
-                                f"Unknown Hub Type: {token.value}",
-                            )
+                        zone_type = cast(str, token.value)
                     case "color":
                         self.__expect(TokenType.EQUALS)
                         color = cast(
@@ -85,29 +89,36 @@ class Parser:
                         )
                     case "max_drones":
                         self.__expect(TokenType.EQUALS)
-                        max_drones = cast(
-                            int, self.__expect(TokenType.INTEGER).value
-                        )
+                        if self.__peek().type == TokenType.PLUS:
+                            self.__advance()
+                        token = self.__expect(TokenType.INTEGER)
+                        max_drones = cast(int, token.value)
+                        if max_drones == 0:
+                            raise ParsingError(
+                                token.location, "Non Positive Integer"
+                            )
                     case _:
                         raise ParsingError(
                             token.location,
                             f"Unknown Key '{token.value}'",
                         )
             self.__expect(TokenType.RBRACKET)
-        self.__expect(TokenType.NEWLINE)
-        return Zone(kind, name, x, y, zone_type, color, max_drones)
+        self.__expect(TokenType.NEWLINE).location.line
+        return Zone(
+            kind, name, x, y, zone_location, zone_type, color, max_drones
+        )
 
-    def __parse_connection(self) -> Connection:
+    def __parse_connection(self, connection_location: Location) -> Connection:
         zone_a: str
         zone_b: str
 
         max_link_capacity: int = 1
 
         self.__expect(TokenType.COLON)
-        token = self.__expect(TokenType.IDENTIFIER)
+        token = self.__expect(TokenType.NAME)
         zone_a = cast(str, token.value)
         self.__expect(TokenType.DASH)
-        token = self.__expect(TokenType.IDENTIFIER)
+        token = self.__expect(TokenType.NAME)
         zone_b = cast(str, token.value)
 
         if self.__peek().type == TokenType.LBRACKET:
@@ -115,15 +126,20 @@ class Parser:
             if self.__peek().type != TokenType.RBRACKET:
                 self.__expect(TokenType.IDENTIFIER, "max_link_capacity")
                 self.__expect(TokenType.EQUALS)
-                max_link_capacity = cast(
-                    int, self.__expect(TokenType.INTEGER).value
-                )
+                if self.__peek().type == TokenType.PLUS:
+                    self.__advance()
+                token = self.__expect(TokenType.INTEGER)
+                max_link_capacity = cast(int, token.value)
+                if max_link_capacity == 0:
+                    raise ParsingError(token.location, "Non Positive Integer")
             self.__expect(TokenType.RBRACKET)
         self.__expect(TokenType.NEWLINE)
 
-        return Connection(zone_a, zone_b, max_link_capacity)
+        return Connection(
+            zone_a, zone_b, connection_location, max_link_capacity
+        )
 
-    def parse(self) -> Map:
+    def parse(self) -> Tuple[int, List[Zone], List[Connection]]:
 
         nb_drones = self.__parse_nb_drones()
         self.__expect(TokenType.NEWLINE)
@@ -131,48 +147,22 @@ class Parser:
             token = self.__expect(TokenType.IDENTIFIER)
             match token.value:
                 case "start_hub":
-                    self.zones.append(self.__parse_Zone("start_hub"))
+                    self.zones.append(
+                        self.__parse_Zone(token.location, "start_hub")
+                    )
                 case "end_hub":
-                    self.zones.append(self.__parse_Zone("end_hub"))
+                    self.zones.append(
+                        self.__parse_Zone(token.location, "end_hub")
+                    )
                 case "hub":
-                    self.zones.append(self.__parse_Zone())
+                    self.zones.append(self.__parse_Zone(token.location))
                 case "connection":
-                    self.connections.append(self.__parse_connection())
+                    self.connections.append(
+                        self.__parse_connection(token.location)
+                    )
                 case _:
                     raise ParsingError(
                         token.location,
                         f"Unknown Identifier: '{token.value}'",
                     )
-        return Map(nb_drones, self.zones, self.connections)
-
-
-if __name__ == "__main__":
-    from .lexer import Lexer
-    from .errors import LexerError
-
-    file_path = "maps/challenger/01_the_impossible_dream.txt"
-    try:
-        with open(file_path, "r") as f:
-            file_lines = f.readlines()
-    except FileNotFoundError:
-        raise ValueError("File Not Found")
-    except NotADirectoryError:
-        raise ValueError("Not A Directory")
-    except IsADirectoryError:
-        raise ValueError("Is A Directory")
-    except PermissionError:
-        raise ValueError("Permission Error")
-    except OSError as e:
-        raise ValueError(f"{e}")
-    lexer = Lexer(file_lines, file_path)
-    try:
-        tokens = lexer.evaluate()
-    except LexerError as e:
-        print(e)
-        exit()
-
-    parser = Parser(tokens)
-    map = parser.parse()
-    print(map.nb_drones)
-    print(*map.zones, sep="\n")
-    print(*map.connections, sep="\n")
+        return (nb_drones, self.zones, self.connections)
