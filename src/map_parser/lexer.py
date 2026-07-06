@@ -1,37 +1,13 @@
-from enum import Enum, auto
-from dataclasses import dataclass
 from typing import List
 
+from .classes import Token, TokenType, Location
 from .errors import LexerError
 
 
-class TokenType(Enum):
-    IDENTIFIER = auto()
-    INTEGER = auto()
-
-    COLON = auto()
-    EQUALS = auto()
-    DASH = auto()
-
-    LBRACKET = auto()
-    RBRACKET = auto()
-
-    NEWLINE = auto()
-    EOF = auto()
-
-
-@dataclass(slots=True, frozen=True)
-class Token:
-    type: TokenType
-    value: str | int | None
-
-    line: int
-    column: int
-
-
 class Lexer:
-    def __init__(self, input: str):
-        self.lines = [f"{l}\n" for l in input.split("\n")]
+    def __init__(self, file_lines: List[str], file_path: str):
+        self.lines = file_lines
+        self.file_path = file_path
         self.line = 1
         self.column = 1
         self.eof = False
@@ -42,22 +18,22 @@ class Lexer:
         return self.lines[self.line - 1][self.column - 1]
 
     def __advance(self) -> None:
-        assert not self.eof, "should not advance when at EOF"
-        prev_line = self.line
+        if self.eof:
+            return
         line_length = len(self.lines[self.line - 1])
         self.column += 1
         if self.column > line_length:
-            self.column = 1
-            self.line += 1
-            if self.line > len(self.lines):
+            if self.line < len(self.lines):
+                self.column = 1
+                self.line += 1
+            else:
                 self.eof = True
-                self.line = prev_line
-                self.column = line_length
+                self.column = line_length + 1
 
     def __skip_whitespace(self) -> None:
         while not self.eof:
             char = self.__peek()
-            if char.isspace() and char != '\n':
+            if char.isspace() and char != "\n":
                 self.__advance()
             else:
                 return
@@ -74,12 +50,16 @@ class Lexer:
 
     def __read_integer(self) -> int:
         integer = ""
+        token_location = Location(self.file_path, self.line, self.column)
         while True:
             char = self.__peek()
             if not char or char in " :[=-]\n":
                 break
             if not char.isdecimal():
-                raise LexerError(self.line, self.column)
+                raise LexerError(
+                    token_location,
+                    "Invalid Integer",
+                )
             integer += char
             self.__advance()
         return int(integer)
@@ -93,38 +73,27 @@ class Lexer:
         output: List[Token] = list()
         while not self.eof:
             self.__skip_whitespace()
-            token_line = self.line
-            token_column = self.column
+            token_location = Location(self.file_path, self.line, self.column)
             char = self.__peek()
             if char == ":":
-                output.append(
-                    Token(TokenType.COLON, None, token_line, token_column)
-                )
+                output.append(Token(TokenType.COLON, None, token_location))
                 self.__advance()
             elif char == "[":
-                output.append(
-                    Token(TokenType.LBRACKET, None, token_line, token_column)
-                )
+                output.append(Token(TokenType.LBRACKET, None, token_location))
                 self.__advance()
             elif char == "]":
-                output.append(
-                    Token(TokenType.RBRACKET, None, token_line, token_column)
-                )
+                output.append(Token(TokenType.RBRACKET, None, token_location))
                 self.__advance()
             elif char == "=":
-                output.append(
-                    Token(TokenType.EQUALS, None, token_line, token_column)
-                )
+                output.append(Token(TokenType.EQUALS, None, token_location))
                 self.__advance()
             elif char == "-":
-                output.append(
-                    Token(TokenType.DASH, None, token_line, token_column)
-                )
+                output.append(Token(TokenType.DASH, None, token_location))
                 self.__advance()
             elif char == "\n":
                 if output and output[-1].type != TokenType.NEWLINE:
                     output.append(
-                        Token(TokenType.NEWLINE, None, token_line, token_column)
+                        Token(TokenType.NEWLINE, None, token_location)
                     )
                 self.__advance()
             elif char == "#":
@@ -132,57 +101,62 @@ class Lexer:
             elif char.isdigit():
                 integer = self.__read_integer()
                 output.append(
-                    Token(TokenType.INTEGER, integer, token_line, token_column)
+                    Token(TokenType.INTEGER, integer, token_location)
                 )
             else:
                 identifier = self.__read_identifier()
                 if not identifier:
                     break
                 output.append(
-                    Token(
-                        TokenType.IDENTIFIER,
-                        identifier,
-                        token_line,
-                        token_column,
-                    )
+                    Token(TokenType.IDENTIFIER, identifier, token_location)
                 )
-        output.append(Token(TokenType.EOF, None, self.line, self.column))
+        output.append(
+            Token(
+                TokenType.EOF,
+                None,
+                Location(self.file_path, self.line, self.column),
+            )
+        )
         return output
 
 
 if __name__ == "__main__":
 
-    # print a random token from map
+    file_path = "maps/challenger/01_the_impossible_dream.txt"
+    try:
+        with open(file_path, "r") as f:
+            file_lines = f.readlines()
+    except FileNotFoundError:
+        raise ValueError("File Not Found")
+    except NotADirectoryError:
+        raise ValueError("Not A Directory")
+    except IsADirectoryError:
+        raise ValueError("Is A Directory")
+    except PermissionError:
+        raise ValueError("Permission Error")
+    except OSError as e:
+        raise ValueError(f"{e}")
+
+    lexer = Lexer(file_lines, file_path)
+    try:
+        tokens = lexer.evaluate()
+    except LexerError as e:
+        print(e)
+        exit()
+
     from random import randint
 
-    with open("maps/challenger/01_the_impossible_dream.txt", "r") as f:
-        file = f.read()
-    lexer = Lexer(file)
-    tokens = lexer.evaluate()
+    # print a random token from map
     token = tokens[randint(0, len(tokens) - 1)]
-    print(
-        "maps/challenger/01_the_impossible_dream.txt:"
-        f"{token.line}:{token.column} - {token}"
-    )
+    print(token)
 
     # print last token
-    with open("maps/challenger/01_the_impossible_dream.txt", "r") as f:
-        file = f.read()
-    lexer = Lexer(file)
-    tokens = lexer.evaluate()
     token = tokens[-1]
-    print(
-        "maps/challenger/01_the_impossible_dream.txt:"
-        f"{token.line}:{token.column} - {token}"
-    )
+    print(token)
 
     # print first token
-    with open("maps/challenger/01_the_impossible_dream.txt", "r") as f:
-        file = f.read()
-    lexer = Lexer(file)
-    tokens = lexer.evaluate()
     token = tokens[0]
-    print(
-        "maps/challenger/01_the_impossible_dream.txt:"
-        f"{token.line}:{token.column} - {token}"
-    )
+    print(token)
+
+    # # print all tokens
+    # print(*tokens, sep="\n")
