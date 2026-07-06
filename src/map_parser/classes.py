@@ -16,10 +16,12 @@ class Location:
 class TokenType(Enum):
     IDENTIFIER = auto()
     INTEGER = auto()
+    NAME = auto()
 
     COLON = auto()
     EQUALS = auto()
     DASH = auto()
+    PLUS = auto()
 
     LBRACKET = auto()
     RBRACKET = auto()
@@ -81,7 +83,7 @@ class Connection:
         return f"[{self.zone_a}]<-->[{self.zone_b}]"
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
 class Map:
     nb_drones: int
     zones: List[Zone]

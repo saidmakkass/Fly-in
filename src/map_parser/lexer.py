@@ -1,7 +1,7 @@
 from typing import List
 
 from .classes import Token, TokenType, Location
-from .errors import LexerError
+from .errors import LexingError
 
 
 class Lexer:
@@ -48,6 +48,16 @@ class Lexer:
             self.__advance()
         return identifier
 
+    def __read_name(self) -> str:
+        name = ""
+        while True:
+            char = self.__peek()
+            if not char or char in " -\n":
+                break
+            name += char
+            self.__advance()
+        return name
+
     def __read_integer(self) -> int:
         integer = ""
         token_location = Location(self.file_path, self.line, self.column)
@@ -56,7 +66,7 @@ class Lexer:
             if not char or char in " :[=-]\n":
                 break
             if not char.isdecimal():
-                raise LexerError(
+                raise LexingError(
                     token_location,
                     "Invalid Integer",
                 )
@@ -75,7 +85,19 @@ class Lexer:
             self.__skip_whitespace()
             token_location = Location(self.file_path, self.line, self.column)
             char = self.__peek()
-            if char == ":":
+            if len(output) >= 2 and (
+                (
+                    output[-2].type == TokenType.IDENTIFIER
+                    and output[-1].type == TokenType.COLON
+                )
+                or (
+                    output[-2].type == TokenType.NAME
+                    and output[-1].type == TokenType.DASH
+                )
+            ):
+                name = self.__read_name()
+                output.append(Token(TokenType.NAME, name, token_location))
+            elif char == ":":
                 output.append(Token(TokenType.COLON, None, token_location))
                 self.__advance()
             elif char == "[":
@@ -89,6 +111,9 @@ class Lexer:
                 self.__advance()
             elif char == "-":
                 output.append(Token(TokenType.DASH, None, token_location))
+                self.__advance()
+            elif char == "+":
+                output.append(Token(TokenType.PLUS, None, token_location))
                 self.__advance()
             elif char == "\n":
                 if output and output[-1].type != TokenType.NEWLINE:
@@ -140,23 +165,32 @@ if __name__ == "__main__":
     lexer = Lexer(file_lines, file_path)
     try:
         tokens = lexer.evaluate()
-    except LexerError as e:
+    except LexingError as e:
         print(e)
         exit()
 
     from random import randint
 
-    # print a random token from map
-    token = tokens[randint(0, len(tokens) - 1)]
-    print(token)
+    # # print a random token from map
+    # token = tokens[randint(0, len(tokens) - 1)]
+    # print(token)
 
-    # print last token
-    token = tokens[-1]
-    print(token)
+    # # print last token
+    # token = tokens[-1]
+    # print(token)
 
-    # print first token
-    token = tokens[0]
-    print(token)
+    # # print first token
+    # token = tokens[0]
+    # print(token)
 
     # # print all tokens
     # print(*tokens, sep="\n")
+
+    # print only NAME tokens
+    print(*[t for t in tokens if t.type == TokenType.NAME], sep="\n")
+
+    # # print only IDENTIFIER tokens
+    # print(*[t for t in tokens if t.type == TokenType.IDENTIFIER], sep="\n")
+
+    # # print only INTEGER tokens
+    # print(*[t for t in tokens if t.type == TokenType.INTEGER], sep="\n")
