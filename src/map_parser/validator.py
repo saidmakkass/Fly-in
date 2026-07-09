@@ -95,11 +95,13 @@ class Validator:
             zone_b = self.zones_by_name[connection.zone_b]
             if connection.location.line < zone_a.location.line:
                 raise ValidationError(
-                    connection.location, f"Connection Declared Before Hub '{zone_a.name}'"
+                    connection.location,
+                    f"Connection Declared Before Hub '{zone_a.name}'",
                 )
             elif connection.location.line < zone_b.location.line:
                 raise ValidationError(
-                    connection.location, f"Connection Declared Before Hub '{zone_b.name}'"
+                    connection.location,
+                    f"Connection Declared Before Hub '{zone_b.name}'",
                 )
             validated_connections.append(
                 Connection(

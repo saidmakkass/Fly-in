@@ -56,6 +56,7 @@ class Parser:
         zone_type: str = "normal"
         color: str | None = None
         max_drones: int = 1
+        parsed_metadata = set()
 
         self.__expect(TokenType.COLON)
         self.__expect(TokenType.SPACE)
@@ -86,6 +87,11 @@ class Parser:
                 token = self.__expect(TokenType.IDENTIFIER)
                 match token.value:
                     case "zone":
+                        if "zone" in parsed_metadata:
+                            raise ParsingError(
+                                token.location, "Duplicated key"
+                            )
+                        parsed_metadata.add("zone")
                         if self.__peek().type == TokenType.SPACE:
                             self.__advance()
                         self.__expect(TokenType.EQUALS)
@@ -94,6 +100,11 @@ class Parser:
                         token = self.__expect(TokenType.IDENTIFIER)
                         zone_type = cast(str, token.value)
                     case "color":
+                        if "color" in parsed_metadata:
+                            raise ParsingError(
+                                token.location, "Duplicated key"
+                            )
+                        parsed_metadata.add("color")
                         if self.__peek().type == TokenType.SPACE:
                             self.__advance()
                         self.__expect(TokenType.EQUALS)
@@ -103,6 +114,11 @@ class Parser:
                             str, self.__expect(TokenType.IDENTIFIER).value
                         )
                     case "max_drones":
+                        if "max_drones" in parsed_metadata:
+                            raise ParsingError(
+                                token.location, "Duplicated key"
+                            )
+                        parsed_metadata.add("max_drones")
                         if self.__peek().type == TokenType.SPACE:
                             self.__advance()
                         self.__expect(TokenType.EQUALS)
@@ -136,7 +152,6 @@ class Parser:
     ) -> UnvalidatedConnection:
         zone_a: str
         zone_b: str
-
         max_link_capacity: int = 1
 
         self.__expect(TokenType.COLON)

@@ -78,9 +78,6 @@ class Connection:
         if isinstance(other, Connection):
             connection_a = frozenset((self.zone_a, self.zone_b))
             connection_b = frozenset((other.zone_a, other.zone_b))
-        elif isinstance(other, UnvalidatedConnection):
-            connection_a = frozenset((self.zone_a.name, self.zone_b.name))
-            connection_b = frozenset((other.zone_a, other.zone_b))
         else:
             return NotImplemented
         return connection_a == connection_b
