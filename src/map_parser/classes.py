@@ -22,6 +22,7 @@ class TokenType(Enum):
     EQUALS = auto()
     DASH = auto()
     PLUS = auto()
+    SPACE = auto()
 
     LBRACKET = auto()
     RBRACKET = auto()
@@ -66,6 +67,30 @@ class Zone:
 
 @dataclass(slots=True, frozen=True)
 class Connection:
+    zone_a: Zone
+    zone_b: Zone
+
+    location: Location
+
+    max_link_capacity: int = 1
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Connection):
+            connection_a = frozenset((self.zone_a, self.zone_b))
+            connection_b = frozenset((other.zone_a, other.zone_b))
+        elif isinstance(other, UnvalidatedConnection):
+            connection_a = frozenset((self.zone_a.name, self.zone_b.name))
+            connection_b = frozenset((other.zone_a, other.zone_b))
+        else:
+            return NotImplemented
+        return connection_a == connection_b
+
+    def __repr__(self) -> str:
+        return f"[{self.zone_a.name}]<-->[{self.zone_b.name}]"
+
+
+@dataclass(slots=True, frozen=True)
+class UnvalidatedConnection:
     zone_a: str
     zone_b: str
 
@@ -74,17 +99,15 @@ class Connection:
     max_link_capacity: int = 1
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Connection):
+        if isinstance(other, UnvalidatedConnection):
+            connection_a = frozenset((self.zone_a, self.zone_b))
+            connection_b = frozenset((other.zone_a, other.zone_b))
+        elif isinstance(other, Connection):
+            connection_a = frozenset((self.zone_a, self.zone_b))
+            connection_b = frozenset((other.zone_a.name, other.zone_b.name))
+        else:
             return NotImplemented
-        connection_a = frozenset((self.zone_a, self.zone_b))
-        connection_b = frozenset((other.zone_a, other.zone_b))
         return connection_a == connection_b
-
-    def __hash__(self) -> int:
-        return hash(frozenset((self.zone_a, self.zone_b)))
-
-    def __repr__(self) -> str:
-        return f"[{self.zone_a}]<-->[{self.zone_b}]"
 
 
 @dataclass(slots=True)

@@ -10,13 +10,12 @@ class Lexer:
         self.file_path = file_path
         self.line = 1
         self.column = 1
-        self.should_skip_whitespace = True
         self.eof = False
 
     def __peek(self) -> str:
         if not self.lines:
             return ""
-        if self.eof or not self.lines[self.line - 1]:
+        if self.eof or not self.lines[self.line - 1].strip():
             return ""
         return self.lines[self.line - 1][self.column - 1]
 
@@ -33,21 +32,25 @@ class Lexer:
                 self.eof = True
                 self.column = line_length + 1
 
-    def __skip_whitespace(self) -> None:
-        if not self.should_skip_whitespace:
-            return
+    def __read_space(self) -> bool:
+        create_token = False
         while not self.eof:
             char = self.__peek()
-            if char.isspace() and char != "\n":
+            if not char:
                 self.__advance()
+                create_token = False
+            elif char.isspace() and char != "\n":
+                self.__advance()
+                create_token = True
             else:
-                return
+                break
+        return create_token
 
     def __read_identifier(self) -> str:
         identifier = ""
         while True:
             char = self.__peek()
-            if not char or char in " :[=-]\n":
+            if not char or char in " :[=-]#\n":
                 break
             identifier += char
             self.__advance()
@@ -68,7 +71,7 @@ class Lexer:
         token_location = Location(self.file_path, self.line, self.column)
         while True:
             char = self.__peek()
-            if not char or char in " :[=-]\n":
+            if not char or char in " :[=-]#\n":
                 break
             if not char.isdecimal():
                 raise LexingError(
@@ -82,25 +85,31 @@ class Lexer:
     def __read_comment(self) -> None:
         while not self.eof and self.__peek() != "\n":
             self.__advance()
-        self.__advance()
 
     def evaluate(self) -> List[Token]:
+        if not self.lines:
+            raise LexingError(Location(self.file_path, 1, 1), "Empty File")
         output: List[Token] = list()
         while not self.eof:
-            self.__skip_whitespace()
+            token_location = Location(self.file_path, self.line, self.column)
+            if (
+                self.__read_space()
+                and output
+                and output[-1].type != TokenType.NEWLINE
+            ):
+                output.append(Token(TokenType.SPACE, None, token_location))
             token_location = Location(self.file_path, self.line, self.column)
             char = self.__peek()
-            if char.isspace() and char != "\n":
-                raise LexingError(token_location, "Invalid Spacing")
             if char.isdigit():
                 integer = self.__read_integer()
                 output.append(
                     Token(TokenType.INTEGER, integer, token_location)
                 )
-            elif len(output) >= 2 and (
+            elif len(output) >= 3 and (
                 (
-                    output[-2].type == TokenType.IDENTIFIER
-                    and output[-1].type == TokenType.COLON
+                    output[-3].type == TokenType.IDENTIFIER
+                    and output[-2].type == TokenType.COLON
+                    and output[-1].type == TokenType.SPACE
                 )
                 or (
                     output[-2].type == TokenType.NAME

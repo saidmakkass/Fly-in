@@ -1,6 +1,6 @@
 from typing import List, Tuple, cast
 
-from .classes import Token, TokenType, Zone, Connection, Location
+from .classes import Token, TokenType, Zone, UnvalidatedConnection, Location
 from .errors import ParsingError
 
 
@@ -9,7 +9,7 @@ class Parser:
         self.tokens = tokens
         self.pos: int = 0
         self.zones: List[Zone] = list()
-        self.connections: List[Connection] = list()
+        self.connections: List[UnvalidatedConnection] = list()
 
     def __peek(self, offset: int = 0) -> Token:
         return self.tokens[self.pos + offset]
@@ -40,6 +40,7 @@ class Parser:
     def __parse_nb_drones(self) -> int:
         self.__expect(TokenType.IDENTIFIER, "nb_drones")
         self.__expect(TokenType.COLON)
+        self.__expect(TokenType.SPACE)
         if self.__peek().type == TokenType.PLUS:
             self.__advance()
         token = self.__expect(TokenType.INTEGER)
@@ -57,8 +58,10 @@ class Parser:
         max_drones: int = 1
 
         self.__expect(TokenType.COLON)
+        self.__expect(TokenType.SPACE)
         token = self.__expect(TokenType.NAME)
         name = cast(str, token.value)
+        self.__expect(TokenType.SPACE)
         if self.__peek().type == TokenType.DASH:
             self.__advance()
             x = cast(int, self.__expect(TokenType.INTEGER).value) * -1
@@ -66,6 +69,7 @@ class Parser:
             if self.__peek().type == TokenType.PLUS:
                 self.__advance()
             x = cast(int, self.__expect(TokenType.INTEGER).value)
+        self.__expect(TokenType.SPACE)
         if self.__peek().type == TokenType.DASH:
             self.__advance()
             y = cast(int, self.__expect(TokenType.INTEGER).value) * -1
@@ -73,22 +77,37 @@ class Parser:
             if self.__peek().type == TokenType.PLUS:
                 self.__advance()
             y = cast(int, self.__expect(TokenType.INTEGER).value)
+        self.__expect(TokenType.SPACE)
         if self.__peek().type == TokenType.LBRACKET:
             self.__advance()
             while self.__peek().type != TokenType.RBRACKET:
+                if self.__peek().type == TokenType.SPACE:
+                    self.__advance()
                 token = self.__expect(TokenType.IDENTIFIER)
                 match token.value:
                     case "zone":
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         self.__expect(TokenType.EQUALS)
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         token = self.__expect(TokenType.IDENTIFIER)
                         zone_type = cast(str, token.value)
                     case "color":
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         self.__expect(TokenType.EQUALS)
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         color = cast(
                             str, self.__expect(TokenType.IDENTIFIER).value
                         )
                     case "max_drones":
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         self.__expect(TokenType.EQUALS)
+                        if self.__peek().type == TokenType.SPACE:
+                            self.__advance()
                         if self.__peek().type == TokenType.PLUS:
                             self.__advance()
                         token = self.__expect(TokenType.INTEGER)
@@ -102,44 +121,63 @@ class Parser:
                             token.location,
                             f"Unknown Key '{token.value}'",
                         )
+                if self.__peek().type == TokenType.SPACE:
+                    self.__advance()
             self.__expect(TokenType.RBRACKET)
+        if self.__peek().type == TokenType.SPACE:
+            self.__advance()
         self.__expect(TokenType.NEWLINE).location.line
         return Zone(
             kind, name, x, y, zone_location, zone_type, color, max_drones
         )
 
-    def __parse_connection(self, connection_location: Location) -> Connection:
+    def __parse_connection(
+        self, connection_location: Location
+    ) -> UnvalidatedConnection:
         zone_a: str
         zone_b: str
 
         max_link_capacity: int = 1
 
         self.__expect(TokenType.COLON)
+        self.__expect(TokenType.SPACE)
         token = self.__expect(TokenType.NAME)
         zone_a = cast(str, token.value)
         self.__expect(TokenType.DASH)
         token = self.__expect(TokenType.NAME)
         zone_b = cast(str, token.value)
 
+        if self.__peek().type == TokenType.SPACE:
+            self.__advance()
         if self.__peek().type == TokenType.LBRACKET:
             self.__advance()
+            if self.__peek().type == TokenType.SPACE:
+                self.__advance()
             if self.__peek().type != TokenType.RBRACKET:
                 self.__expect(TokenType.IDENTIFIER, "max_link_capacity")
+                if self.__peek().type == TokenType.SPACE:
+                    self.__advance()
                 self.__expect(TokenType.EQUALS)
+                if self.__peek().type == TokenType.SPACE:
+                    self.__advance()
                 if self.__peek().type == TokenType.PLUS:
                     self.__advance()
                 token = self.__expect(TokenType.INTEGER)
                 max_link_capacity = cast(int, token.value)
                 if max_link_capacity == 0:
                     raise ParsingError(token.location, "Non Positive Integer")
+            if self.__peek().type == TokenType.SPACE:
+                self.__advance()
             self.__expect(TokenType.RBRACKET)
+        if self.__peek().type == TokenType.SPACE:
+            self.__advance()
         self.__expect(TokenType.NEWLINE)
 
-        return Connection(
+        return UnvalidatedConnection(
             zone_a, zone_b, connection_location, max_link_capacity
         )
 
-    def parse(self) -> Tuple[int, List[Zone], List[Connection]]:
+    def parse(self) -> Tuple[int, List[Zone], List[UnvalidatedConnection]]:
 
         nb_drones = self.__parse_nb_drones()
         self.__expect(TokenType.NEWLINE)

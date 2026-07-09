@@ -1,6 +1,6 @@
 from typing import List
 
-from .classes import Map, Zone, Connection
+from .classes import Map, Zone, UnvalidatedConnection, Connection
 from .errors import ValidationError
 
 VALID_ZONE_TYPES = ["normal", "blocked", "restricted", "priority"]
@@ -29,7 +29,10 @@ VALID_COLORS = [
 
 class Validator:
     def __init__(
-        self, nb_drones: int, zones: List[Zone], connections: List[Connection]
+        self,
+        nb_drones: int,
+        zones: List[Zone],
+        connections: List[UnvalidatedConnection],
     ):
         self.nb_drones = nb_drones
         self.zones = zones
@@ -69,8 +72,8 @@ class Validator:
         if end_zone < 1:
             raise ValidationError(None, "Missing end_hub")
 
-    def __validate_connections(self) -> None:
-        validated_connections = set()
+    def __validate_connections(self) -> List[Connection]:
+        validated_connections = list()
         for connection in self.connections:
             if connection in validated_connections:
                 raise ValidationError(
@@ -88,10 +91,28 @@ class Validator:
                     connection.location,
                     f"Connection With Unknown Zone '{connection.zone_b}'",
                 )
-            validated_connections.add(connection)
+            zone_a = self.zones_by_name[connection.zone_a]
+            zone_b = self.zones_by_name[connection.zone_b]
+            if connection.location.line < zone_a.location.line:
+                raise ValidationError(
+                    connection.location, f"Connection Declared Before Hub '{zone_a.name}'"
+                )
+            elif connection.location.line < zone_b.location.line:
+                raise ValidationError(
+                    connection.location, f"Connection Declared Before Hub '{zone_b.name}'"
+                )
+            validated_connections.append(
+                Connection(
+                    zone_a,
+                    zone_b,
+                    connection.location,
+                    connection.max_link_capacity,
+                )
+            )
+        return validated_connections
 
     def validate(self) -> Map:
         self.__validate_zones()
-        self.__validate_connections()
+        validated_connections = self.__validate_connections()
 
-        return Map(self.nb_drones, self.zones, self.connections)
+        return Map(self.nb_drones, self.zones, validated_connections)
