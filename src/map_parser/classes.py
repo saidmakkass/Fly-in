@@ -110,6 +110,8 @@ class UnvalidatedConnection:
 @dataclass(slots=True)
 class Map:
     nb_drones: int
+    start_hub: Zone
+    end_hub: Zone
     zones: List[Zone]
     connections: List[Connection]
 

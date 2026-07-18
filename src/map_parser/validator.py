@@ -38,19 +38,21 @@ class Validator:
         self.zones = zones
         self.connections = connections
         self.zones_by_name: dict[str, Zone] = {}
+        self.start_hub: Zone | None = None
+        self.end_hub: Zone | None = None
 
     def __validate_zones(self) -> None:
         start_zone = 0
         end_zone = 0
         for zone in self.zones:
             if zone.kind == "start_hub":
-                start_zone += 1
+                if self.start_hub is not None:
+                    raise ValidationError(zone.location, "Extra start_hub")
+                self.start_hub = zone
             if zone.kind == "end_hub":
-                end_zone += 1
-            if start_zone > 1:
-                raise ValidationError(zone.location, "Extra start_hub")
-            if end_zone > 1:
-                raise ValidationError(zone.location, "Extra end_hub")
+                if self.end_hub is not None:
+                    raise ValidationError(zone.location, "Extra end_hub")
+                self.end_hub = zone
             if zone.name in self.zones_by_name:
                 raise ValidationError(
                     zone.location, "Zone With Duplicated Name"
@@ -67,9 +69,9 @@ class Validator:
             if zone.type not in VALID_ZONE_TYPES:
                 raise ValidationError(zone.location, "Zone With Invalid Type")
             self.zones_by_name[zone.name] = zone
-        if start_zone < 1:
+        if self.start_hub is None:
             raise ValidationError(None, "Missing start_hub")
-        if end_zone < 1:
+        if self.end_hub is None:
             raise ValidationError(None, "Missing end_hub")
 
     def __validate_connections(self) -> List[Connection]:
@@ -117,4 +119,10 @@ class Validator:
         self.__validate_zones()
         validated_connections = self.__validate_connections()
 
-        return Map(self.nb_drones, self.zones, validated_connections)
+        return Map(
+            self.nb_drones,
+            self.start_hub,
+            self.end_hub,
+            self.zones,
+            validated_connections,
+        )
