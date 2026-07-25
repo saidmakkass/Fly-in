@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 from enum import Enum, auto
 from dataclasses import dataclass
 
@@ -44,25 +44,24 @@ class Token:
         )
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True, order=True)
 class Zone:
     kind: str
     name: str
     x: int
     y: int
 
-    location: Location
+    location: Optional[Location] = None
 
     type: str = "normal"
     color: str | None = None
     max_drones: int = 1
 
+    def __hash__(self):
+        return hash(self.name)
+
     def __repr__(self) -> str:
-        return (
-            f"[{self.kind}] {self.name} ({self.x},{self.y}) [type={self.type} "
-            + (f"color={self.color} " if self.color is not None else "")
-            + f"max_drones={self.max_drones}]"
-        )
+        return self.name
 
 
 @dataclass(slots=True, frozen=True)
@@ -70,20 +69,35 @@ class Connection:
     zone_a: Zone
     zone_b: Zone
 
-    location: Location
+    location: Optional[Location] = None
 
     max_link_capacity: int = 1
 
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, Connection):
-            connection_a = frozenset((self.zone_a, self.zone_b))
-            connection_b = frozenset((other.zone_a, other.zone_b))
-        else:
+    @property
+    def name(self) -> str:
+        return f"{self.zone_a.name}-{self.zone_b.name}"
+
+    @property
+    def max_drones(self) -> int:
+        return self.max_link_capacity
+
+    def get_other(self, zone: Zone):
+        if zone not in self:
+            raise ValueError(f"{zone.name} not in {self.name}")
+        if zone is self.zone_a:
+            return self.zone_b
+        return self.zone_a
+
+    def __contains__(self, item):
+        if not isinstance(item, Zone):
             return NotImplemented
-        return connection_a == connection_b
+        return item in (self.zone_a, self.zone_b)
+
+    def __iter__(self):
+        return iter((self.zone_a, self.zone_b))
 
     def __repr__(self) -> str:
-        return f"[{self.zone_a.name}]<-->[{self.zone_b.name}]"
+        return self.name
 
 
 @dataclass(slots=True, frozen=True)
