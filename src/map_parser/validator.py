@@ -42,16 +42,16 @@ class Validator:
         self.end_hub: Zone | None = None
 
     def __validate_zones(self) -> None:
-        start_zone = 0
-        end_zone = 0
         for zone in self.zones:
             if zone.kind == "start_hub":
                 if self.start_hub is not None:
                     raise ValidationError(zone.location, "Extra start_hub")
+                zone.max_drones = self.nb_drones
                 self.start_hub = zone
             if zone.kind == "end_hub":
                 if self.end_hub is not None:
                     raise ValidationError(zone.location, "Extra end_hub")
+                zone.max_drones = self.nb_drones
                 self.end_hub = zone
             if zone.name in self.zones_by_name:
                 raise ValidationError(
