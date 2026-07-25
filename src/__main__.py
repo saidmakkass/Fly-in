@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 
 from .map_parser import load_map, LexingError, ParsingError, ValidationError
 from .simulation import Simulation
+from .visualizer import SimulationWindow
 
 
 def main():
@@ -27,12 +28,15 @@ def main():
         exit(1)
     simulation = Simulation(world)
     try:
-        output = simulation.run()
+        turns = simulation.run()
     except ValueError as e:
         print(e)
         exit(1)
-    for turn, steps in output.items():
+    for turn, steps in turns.items():
         print(" ". join(steps))
+    visualizer = SimulationWindow(world)
+    visualizer.run()
+
 
 
 if __name__ == "__main__":
