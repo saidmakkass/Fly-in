@@ -71,6 +71,7 @@ class SimulationWindow(Window):
 
         self.hud_background_color = Color(45, 42, 64, 225)
         self.hud_height = self.height / 4
+        self.target_hud_height = 0
         self.hud_bar_size = 5
         self.button_size = 50
         self.controls_offset = 50
@@ -161,14 +162,6 @@ class SimulationWindow(Window):
             arcade.draw_circle_outline(sx, sy, zone_size, border_color, LINE_WIDTH)
 
     def __draw_hud(self):
-        if not self.flags["hud"]:
-            return
-
-        if self.hud_height <= self.height / 4:
-            self.hud_height = self.height / 4
-        if self.hud_height >= self.height - self.hud_bar_size:
-            self.hud_height = self.height - self.hud_bar_size
-
         arcade.draw_rect_filled(
             arcade.rect.Viewport(0, 0, self.width, self.hud_height),
             self.hud_background_color
@@ -177,6 +170,9 @@ class SimulationWindow(Window):
         self.turn_text.text = f"Turn: {self.turn}"
         self.turn_text.x, self.turn_text.y = 40, self.hud_height - 40
         self.turn_text.draw()
+
+        if not self.flags["hud"]:
+            return
 
         i = 0
         arcade.draw_texture_rect(self.reset_button, arcade.rect.Viewport(self.controls_offset + self.button_size + (i := i + self.button_size), 10, self.button_size, self.button_size))
@@ -191,6 +187,13 @@ class SimulationWindow(Window):
     def draw_map(self):
         self.__draw_cons()
         self.__draw_zones()
+
+    def on_update(self, delta_time):
+        speed = 12.0
+
+        self.hud_height += (
+            self.target_hud_height - self.hud_height
+        ) * speed * delta_time
 
     def on_draw(self):
         self.clear()
@@ -223,6 +226,10 @@ class SimulationWindow(Window):
         elif symbol == key.ESCAPE:
             self.close()
         elif symbol == key.H:
+            if self.flags["hud"]:
+                self.target_hud_height = 0
+            else:
+                self.target_hud_height = self.height / 4
             self.flags["hud"] = not self.flags["hud"]
 
     def on_key_release(self, symbol, modifiers):
@@ -247,7 +254,7 @@ class SimulationWindow(Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == 1:
             if self.flags["hud"]:
-                if self.hud_height - self.hud_bar_size < y < self.hud_height + self.hud_bar_size:
+                if self.hud_height - self.hud_bar_size * 2 < y < self.hud_height + self.hud_bar_size:
                     self.flags["can_resize_hud"] = True
                 else:
                     self.flags["can_resize_hud"] = False
