@@ -16,7 +16,7 @@ class Simulation:
 
     def __get_path(self) -> Path:
         dist = {self.start_hub: 0}
-        prev = {}
+        prev: Dict[Zone, Tuple[Zone, Connection]] = {}
         queue = [(0, 0, self.start_hub)]
         path = Path()
 
@@ -37,8 +37,8 @@ class Simulation:
             if extra_cost == 3:
                 wait_counter += 1
 
-            if wait_counter > len(self.graph.zones ) * 2:
-                break
+            # if wait_counter > len(self.graph.zones) * 2:
+            #     break
 
             if len(self.graph.neighbors[zone]) == 1:
                 break
@@ -55,13 +55,13 @@ class Simulation:
                         heappush(queue, (turn + 1, 3, neighbor))
         return path
 
-    def run(self):
-        output = {}
+    def run(self) -> Dict[int, Dict[int, Zone | Connection]]:
+        output: Dict[int, Dict[int, Zone | Connection]] = {0: {}}
         for d in range(1, self.nb_drones + 1):
+            output[0][d] = self.start_hub
             path = self.__get_path()
             if not path.path:
                 raise ValueError("Error: No Path Found")
             for turn, spot in path.path.items():
-                if turn:
-                    output.setdefault(turn, list()).append(f"D{d}-{spot.name}")
+                output.setdefault(turn, dict())[d] = spot
         return output

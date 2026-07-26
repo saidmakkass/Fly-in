@@ -60,6 +60,9 @@ class Zone:
     def __hash__(self):
         return hash(self.name)
 
+    def __str__(self) -> str:
+        return self.name
+
     def __repr__(self) -> str:
         return self.name
 
@@ -81,6 +84,14 @@ class Connection:
     def max_drones(self) -> int:
         return self.max_link_capacity
 
+    @property
+    def x(self) -> float:
+        return (self.zone_a.x + self.zone_b.x) / 2
+
+    @property
+    def y(self) -> float:
+        return (self.zone_a.y + self.zone_b.y) / 2
+
     def get_other(self, zone: Zone):
         if zone not in self:
             raise ValueError(f"{zone.name} not in {self.name}")
@@ -95,6 +106,9 @@ class Connection:
 
     def __iter__(self):
         return iter((self.zone_a, self.zone_b))
+
+    def __str__(self) -> str:
+           return self.name
 
     def __repr__(self) -> str:
         return self.name

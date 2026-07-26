@@ -69,10 +69,10 @@ class ReservationTable:
 class Path:
 
     def __init__(self):
-        self.path = dict()
+        self.path: Dict[int, Zone | Connection] = dict()
 
-    def reconstruct(self, prev, dist, start, end, reservation_table):
-        path = dict()
+    def reconstruct(self, prev: Dict[Zone, Tuple[Zone, Connection]], dist: Dict[Zone, int], start: Zone, end: Zone, reservation_table: ReservationTable):
+        path: Dict[int, Zone | Connection] = dict()
         cur = end
         while cur is not start:
             turn = dist[cur]

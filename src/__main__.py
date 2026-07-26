@@ -33,8 +33,11 @@ def main():
         print(e)
         exit(1)
     for turn, steps in turns.items():
-        print(" ". join(steps))
-    visualizer = SimulationWindow(world)
+        if turn:
+            for drone, spot in steps.items():
+                print(f"D{drone}-{spot}", end=" ")
+            print()
+    visualizer = SimulationWindow(world, turns)
     visualizer.run()
 
 

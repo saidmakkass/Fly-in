@@ -11,8 +11,9 @@ import arcade.color
 
 from webcolors import name_to_hex
 from importlib.resources import files
+from typing import Dict
 
-from ..map_parser import Map
+from ..map_parser import Map, Zone, Connection
 
 WINDOW_HEIGHT = 720
 WINDOW_WIDTH = 1280
@@ -36,7 +37,7 @@ RAINBOW_COLORS = (
 
 
 class SimulationWindow(Window):
-    def __init__(self, map: Map):
+    def __init__(self, map: Map, turns: Dict[int, Dict[int, Zone | Connection]]):
         super().__init__(
             WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, resizable=True
         )
@@ -56,6 +57,7 @@ class SimulationWindow(Window):
         }
 
         self.map = map
+        self.turns = turns
 
         self.min_x = min(z.x for z in map.zones)
         self.max_x = max(z.x for z in map.zones)
@@ -70,7 +72,7 @@ class SimulationWindow(Window):
         }
 
         self.hud_background_color = Color(45, 42, 64, 225)
-        self.hud_height = self.height / 4
+        self.hud_height = 0
         self.target_hud_height = 0
         self.hud_bar_size = 5
         self.button_size = 50
@@ -78,6 +80,7 @@ class SimulationWindow(Window):
 
         self.turn = 0
         self.turn_text = arcade.Text(f"Turn: {self.turn}", 0, 0, arcade.color.WHITE, 22)
+        self.drone_size = 20
 
         self.__calculate_viewport()
         self.__load__assets()
@@ -117,8 +120,9 @@ class SimulationWindow(Window):
         self.oy = self.height - self.max_y * self.zoom - self.max_zone_size
 
     def on_resize(self, width: int, height: int):
-        super().on_resize(width, height)
         self.__calculate_viewport()
+        if self.target_hud_height:
+            self.target_hud_height = height / 4
 
     def world_to_screen(self, x, y):
         return (
@@ -158,6 +162,7 @@ class SimulationWindow(Window):
                 border_color = Color(0,0,0, 0)
             background_color =  self.zone_background_colors[zone.type]
             sx, sy = self.world_to_screen(zone.x, zone.y)
+            draw_circle_filled(sx, sy, zone_size / 3, arcade.color.WHITE)
             draw_circle_filled(sx, sy, zone_size, background_color)
             arcade.draw_circle_outline(sx, sy, zone_size, border_color, LINE_WIDTH)
 
@@ -188,6 +193,17 @@ class SimulationWindow(Window):
         self.__draw_cons()
         self.__draw_zones()
 
+    def __draw_drone(self, id: int, spot: Zone|Connection):
+        drone_texture = arcade.make_circle_texture(self.drone_size, arcade.color.CYAN, f"D{id}")
+        sx, sy = self.world_to_screen(spot.x, spot.y)
+        arcade.draw_texture_rect(drone_texture, arcade.rect.Viewport(sx, sy, self.drone_size, self.drone_size))
+
+    def draw_drones(self):
+        turn = self.turns[self.turn]
+        for drone, spot in turn.items():
+            self.__draw_drone(drone, spot)
+
+
     def on_update(self, delta_time):
         speed = 12.0
 
@@ -202,13 +218,16 @@ class SimulationWindow(Window):
             arcade.rect.Viewport(0, 0, self.width, self.height),
         )
         self.draw_map()
+        self.draw_drones()
         self.__draw_hud()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == key.RIGHT or symbol == key.D:
             self.hold["right"] = True
+            self.turn += 1
         elif symbol == key.LEFT or symbol == key.A:
             self.hold["left"] = True
+            self.turn -= 1
         elif symbol == key.UP or symbol == key.W:
             self.hold["up"] = True
         elif symbol == key.DOWN or symbol == key.S:
