@@ -79,6 +79,7 @@ class SimulationWindow(Window):
         self.controls_offset = 50
 
         self.turn = 0
+        self.max_turn = len(self.turns) - 1
         self.turn_text = arcade.Text(f"Turn: {self.turn}", 0, 0, arcade.color.WHITE, 22)
         self.drone_size = 20
 
@@ -149,9 +150,15 @@ class SimulationWindow(Window):
     def __draw_cons(self):
         point_list = list()
         for con in self.map.connections:
-            point_list.append(self.world_to_screen(con.zone_a.x, con.zone_a.y))
-            point_list.append(self.world_to_screen(con.zone_b.x, con.zone_b.y))
-        draw_lines(point_list, arcade.color.WHITE, LINE_WIDTH)
+            con_color = arcade.color.WHITE
+            if any(True if spot is con else False for spot in self.turns[self.turn].values()):
+                con_color = arcade.color.ORANGE_PEEL
+            asx, asy = self.world_to_screen(con.zone_a.x, con.zone_a.y)
+            bsx, bsy = self.world_to_screen(con.zone_b.x, con.zone_b.y)
+            arcade.draw_line(asx, asy, bsx, bsy, con_color, LINE_WIDTH)
+        #     point_list.append(self.world_to_screen(con.zone_a.x, con.zone_a.y))
+        #     point_list.append(self.world_to_screen(con.zone_b.x, con.zone_b.y))
+        # draw_lines(point_list, arcade.color.WHITE, LINE_WIDTH)
 
     def __draw_zones(self):
         zone_size = min(self.zoom, self.max_zone_size)
@@ -194,9 +201,12 @@ class SimulationWindow(Window):
         self.__draw_zones()
 
     def __draw_drone(self, id: int, spot: Zone|Connection):
-        drone_texture = arcade.make_circle_texture(self.drone_size, arcade.color.CYAN, f"D{id}")
+        drone_color = arcade.color.CYAN
+        if isinstance(spot, Connection):
+            drone_color = arcade.color.ORANGE
+        drone_texture = arcade.make_circle_texture(self.drone_size, drone_color, f"D{id}")
         sx, sy = self.world_to_screen(spot.x, spot.y)
-        arcade.draw_texture_rect(drone_texture, arcade.rect.Viewport(sx, sy, self.drone_size, self.drone_size))
+        arcade.draw_texture_rect(drone_texture, arcade.rect.Viewport(sx - self.drone_size/2, sy - self.drone_size/2, self.drone_size, self.drone_size))
 
     def draw_drones(self):
         turn = self.turns[self.turn]
@@ -225,9 +235,11 @@ class SimulationWindow(Window):
         if symbol == key.RIGHT or symbol == key.D:
             self.hold["right"] = True
             self.turn += 1
+            self.turn = min(self.turn, self.max_turn)
         elif symbol == key.LEFT or symbol == key.A:
             self.hold["left"] = True
             self.turn -= 1
+            self.turn = max(self.turn, 0)
         elif symbol == key.UP or symbol == key.W:
             self.hold["up"] = True
         elif symbol == key.DOWN or symbol == key.S:
