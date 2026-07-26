@@ -53,7 +53,8 @@ class SimulationWindow(Window):
             "hud": False,
             "can_drag": False,
             "can_resize_hud": False,
-            "pause_button": False
+            "pause_button": False,
+            "info": False
         }
 
         self.map = map
@@ -70,6 +71,7 @@ class SimulationWindow(Window):
             "priority": Color(0,255,255,128),
             "blocked": Color(255,0,0,128),
         }
+        self.zone_info = {}
 
         self.hud_background_color = Color(45, 42, 64, 225)
         self.hud_height = 0
@@ -166,12 +168,18 @@ class SimulationWindow(Window):
             try:
                 border_color = Color.from_hex_string(name_to_hex(zone.color))
             except ValueError:
-                border_color = Color(0,0,0, 0)
+                border_color = Color(0,0,0, 128)
             background_color =  self.zone_background_colors[zone.type]
             sx, sy = self.world_to_screen(zone.x, zone.y)
             draw_circle_filled(sx, sy, zone_size / 3, arcade.color.WHITE)
             draw_circle_filled(sx, sy, zone_size, background_color)
             arcade.draw_circle_outline(sx, sy, zone_size, border_color, LINE_WIDTH)
+
+            if self.flags["info"]:
+                zone_info = self.zone_info.setdefault(zone, arcade.Text(f"{zone.name}", 0, 0, border_color, 14, anchor_x="center"))
+                zone_info.x, zone_info.y = sx, sy - zone_size*1.4
+                zone_info.draw()
+
 
     def __draw_hud(self):
         arcade.draw_rect_filled(
@@ -262,6 +270,8 @@ class SimulationWindow(Window):
             else:
                 self.target_hud_height = self.height / 4
             self.flags["hud"] = not self.flags["hud"]
+        elif symbol == key.I:
+            self.flags["info"] = not self.flags["info"]
 
     def on_key_release(self, symbol, modifiers):
         if symbol == key.RIGHT or symbol == key.D:
