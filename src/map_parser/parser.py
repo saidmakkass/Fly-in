@@ -142,7 +142,8 @@ class Parser:
             self.__expect(TokenType.RBRACKET)
         if self.__peek().type == TokenType.SPACE:
             self.__advance()
-        self.__expect(TokenType.NEWLINE).location.line
+        if self.__peek().type != TokenType.EOF:
+            self.__expect(TokenType.NEWLINE)
         return Zone(
             kind, name, x, y, zone_location, zone_type, color, max_drones
         )
@@ -186,7 +187,8 @@ class Parser:
             self.__expect(TokenType.RBRACKET)
         if self.__peek().type == TokenType.SPACE:
             self.__advance()
-        self.__expect(TokenType.NEWLINE)
+        if self.__peek().type != TokenType.EOF:
+            self.__expect(TokenType.NEWLINE)
 
         return UnvalidatedConnection(
             zone_a, zone_b, connection_location, max_link_capacity
