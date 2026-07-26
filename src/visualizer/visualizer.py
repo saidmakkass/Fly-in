@@ -9,6 +9,7 @@ from arcade import (
 from arcade.types import Color
 import arcade.color
 
+from webcolors import name_to_hex
 from importlib.resources import files
 
 from ..map_parser import Map
@@ -21,6 +22,17 @@ WINDOW_TITLE = "Fly-in"
 LINE_WIDTH = 5
 MARGIN = 0.8
 ZOOM_SPEED = 1.2
+
+RAINBOW_COLORS = (
+    arcade.color.ELECTRIC_CRIMSON,
+    arcade.color.FLUORESCENT_ORANGE,
+    arcade.color.ELECTRIC_YELLOW,
+    arcade.color.ELECTRIC_GREEN,
+    arcade.color.ELECTRIC_CYAN,
+    arcade.color.MEDIUM_ELECTRIC_BLUE,
+    arcade.color.ELECTRIC_INDIGO,
+    arcade.color.ELECTRIC_PURPLE,
+)
 
 
 class SimulationWindow(Window):
@@ -36,6 +48,12 @@ class SimulationWindow(Window):
             "up": False,
             "down": False,
         }
+        self.flags = {
+            "hud": False,
+            "can_drag": False,
+            "can_resize_hud": False,
+            "pause_button": False
+        }
 
         self.map = map
 
@@ -44,6 +62,22 @@ class SimulationWindow(Window):
         self.min_y = min(z.y for z in map.zones)
         self.max_y = max(z.y for z in map.zones)
 
+        self.zone_background_colors = {
+            "normal": Color(128,128,128,128),
+            "restricted": Color(255,255,0,128),
+            "priority": Color(0,255,255,128),
+            "blocked": Color(255,0,0,128),
+        }
+
+        self.hud_background_color = Color(45, 42, 64, 225)
+        self.hud_height = self.height / 4
+        self.hud_bar_size = 5
+        self.button_size = 50
+        self.controls_offset = 50
+
+        self.turn = 0
+        self.turn_text = arcade.Text(f"Turn: {self.turn}", 0, 0, arcade.color.WHITE, 22)
+
         self.__calculate_viewport()
         self.__load__assets()
 
@@ -51,29 +85,35 @@ class SimulationWindow(Window):
         assets_dir = files(__package__) / "assets"
 
         self.background = load_texture(assets_dir / "background.jpg")
+        controls_sheet = arcade.SpriteSheet(assets_dir / "controls.png")
+        # from left of texture to left of next texture = 795
+        # from top of texture to top of next one = 709
+        # width of texture = 446
+        # margin left/right 349
+        # margin up/down 263
+        textures = controls_sheet.get_texture_grid(
+            (446, 446),
+            7,
+            35,
+            (349/2, 349/2, 263/2, 263/2)
+        )
+        self.play_button = textures[1]
+        self.pause_button = textures[2]
+        self.prev_button = textures[3]
+        self.next_button = textures[4]
+        self.reset_button = textures[22]
+
 
     def __calculate_viewport(self):
-        graph_width = self.max_x - self.min_x
-        graph_height = self.max_y - self.min_y
+        self.max_zone_size = 40
+        self.zoom = 100
 
-        zoom_x = self.width / graph_width
-        zoom_y = self.height / graph_height
-
-        self.zoom = min(zoom_x, zoom_y) * MARGIN
         self.min_zoom = self.zoom
         self.max_zoom = self.zoom * 5
         self.zoom_step = self.zoom / 5
 
-        self.max_cell_size = self.zoom / 2 * MARGIN
-
-        graph_cx = (self.min_x + self.max_x) / 2
-        graph_cy = (self.min_y + self.max_y) / 2
-
-        screen_cx = self.width / 2
-        screen_cy = self.height / 2
-
-        self.ox = screen_cx - graph_cx * self.zoom
-        self.oy = screen_cy - graph_cy * self.zoom
+        self.ox = self.max_zone_size * 2 - self.map.start_hub.x * self.zoom
+        self.oy = self.height - self.max_y * self.zoom - self.max_zone_size
 
     def on_resize(self, width: int, height: int):
         super().on_resize(width, height)
@@ -95,11 +135,11 @@ class SimulationWindow(Window):
         if self.hold["zoom_in"]:
             self.zoom += ZOOM_SPEED
             self.zoom = min(self.zoom, self.max_zoom)
-            print(self.zoom)
+            # print(self.zoom)
         if self.hold["zoom_out"]:
             self.zoom -= ZOOM_SPEED
             self.zoom = max(self.zoom, self.min_zoom)
-            print(self.zoom)
+            # print(self.zoom)
 
     def __draw_cons(self):
         point_list = list()
@@ -109,10 +149,44 @@ class SimulationWindow(Window):
         draw_lines(point_list, arcade.color.WHITE, LINE_WIDTH)
 
     def __draw_zones(self):
-        cell_size = min(self.zoom, self.max_cell_size)
+        zone_size = min(self.zoom, self.max_zone_size)
         for zone in self.map.zones:
+            try:
+                border_color = Color.from_hex_string(name_to_hex(zone.color))
+            except ValueError:
+                border_color = Color(0,0,0, 0)
+            background_color =  self.zone_background_colors[zone.type]
             sx, sy = self.world_to_screen(zone.x, zone.y)
-            draw_circle_filled(sx, sy, cell_size, arcade.color.RED)
+            draw_circle_filled(sx, sy, zone_size, background_color)
+            arcade.draw_circle_outline(sx, sy, zone_size, border_color, LINE_WIDTH)
+
+    def __draw_hud(self):
+        if not self.flags["hud"]:
+            return
+
+        if self.hud_height <= self.height / 4:
+            self.hud_height = self.height / 4
+        if self.hud_height >= self.height - self.hud_bar_size:
+            self.hud_height = self.height - self.hud_bar_size
+
+        arcade.draw_rect_filled(
+            arcade.rect.Viewport(0, 0, self.width, self.hud_height),
+            self.hud_background_color
+        )
+        arcade.draw_line(0, self.hud_height, self.width, self.hud_height, arcade.color.BLACK, self.hud_bar_size * 2)
+        self.turn_text.text = f"Turn: {self.turn}"
+        self.turn_text.x, self.turn_text.y = 40, self.hud_height - 40
+        self.turn_text.draw()
+
+        i = 0
+        arcade.draw_texture_rect(self.reset_button, arcade.rect.Viewport(self.controls_offset + self.button_size + (i := i + self.button_size), 10, self.button_size, self.button_size))
+        arcade.draw_texture_rect(self.prev_button, arcade.rect.Viewport(self.controls_offset + self.button_size + (i := i + self.button_size), 10, self.button_size, self.button_size))
+        play_pause_rect = arcade.rect.Viewport(self.controls_offset + self.button_size + (i := i + self.button_size), 10, self.button_size, self.button_size)
+        if self.flags["pause_button"]:
+            arcade.draw_texture_rect(self.pause_button, play_pause_rect)
+        else:
+            arcade.draw_texture_rect(self.play_button, play_pause_rect)
+        arcade.draw_texture_rect(self.next_button, arcade.rect.Viewport(self.controls_offset + self.button_size + (i := i + self.button_size), 10, self.button_size, self.button_size))
 
     def draw_map(self):
         self.__draw_cons()
@@ -122,9 +196,10 @@ class SimulationWindow(Window):
         self.clear()
         draw_texture_rect(
             self.background,
-            arcade.LBWH(0, 0, self.width, self.height),
+            arcade.rect.Viewport(0, 0, self.width, self.height),
         )
         self.draw_map()
+        self.__draw_hud()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == key.RIGHT or symbol == key.D:
@@ -138,15 +213,17 @@ class SimulationWindow(Window):
         elif symbol == key.EQUAL:
             self.zoom += self.zoom_step
             self.zoom = min(self.zoom, self.max_zoom)
-            print(self.zoom)
+            # print(self.zoom)
         elif symbol == key.MINUS:
             self.zoom -= self.zoom_step
             self.zoom = max(self.zoom, self.min_zoom)
-            print(self.zoom)
+            # print(self.zoom)
         elif symbol == key.R:
             self.__calculate_viewport()
         elif symbol == key.ESCAPE:
             self.close()
+        elif symbol == key.H:
+            self.flags["hud"] = not self.flags["hud"]
 
     def on_key_release(self, symbol, modifiers):
         if symbol == key.RIGHT or symbol == key.D:
@@ -167,7 +244,32 @@ class SimulationWindow(Window):
             self.ox = x - wx * self.zoom
             self.oy = y - wy * self.zoom
 
+    def on_mouse_press(self, x, y, button, modifiers):
+        if button == 1:
+            if self.flags["hud"]:
+                if self.hud_height - self.hud_bar_size < y < self.hud_height + self.hud_bar_size:
+                    self.flags["can_resize_hud"] = True
+                else:
+                    self.flags["can_resize_hud"] = False
+                if self.hud_height + self.hud_bar_size < y < self.height:
+                    self.flags["can_drag"] = True
+                else:
+                    self.flags["can_drag"] = False
+            else:
+                self.flags["can_resize_hud"] = False
+                self.flags["can_drag"] = True
+
+
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        self.ox += dx
-        self.oy += dy
+        if self.flags["can_drag"]:
+            self.ox += dx
+            self.oy += dy
+        if self.flags["can_resize_hud"]:
+            self.hud_height += dy
+        # print(f"{self.ox, self.oy = }")
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        pass
+
+
