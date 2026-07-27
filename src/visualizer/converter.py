@@ -14,7 +14,7 @@ class Converter:
     """
 
     @staticmethod
-    def convert_map(map: Map) -> Graph:
+    def convert_graph(map: Map) -> Graph:
         """
         Convert a Map object to a Graph.
 
@@ -25,13 +25,13 @@ class Converter:
             map (Graph): The map as a Graph
         """
         return (
-            [Converter.convert_zone(z) for z in map.zones],
-            [Converter.convert_connection(c) for c in map.connections],
+            [Converter.convert_node(z) for z in map.zones],
+            [Converter.convert_edge(c) for c in map.connections],
             map.nb_drones,
         )
 
     @staticmethod
-    def convert_zone(zone: Zone) -> Node:
+    def convert_node(zone: Zone) -> Node:
         """
         Convert a Zone object to a Node.
 
@@ -51,7 +51,7 @@ class Converter:
         )
 
     @staticmethod
-    def convert_connection(connection: Connection) -> Edge:
+    def convert_edge(connection: Connection) -> Edge:
         """
         Convert a Connection object to a Edge.
 
