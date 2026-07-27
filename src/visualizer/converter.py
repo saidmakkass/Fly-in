@@ -4,7 +4,7 @@ from ..map_parser import Map, Zone, Connection
 
 Node = Tuple[str, int, int, str, str, int]
 Edge = Tuple[int, int, int, int, int]
-Graph = Tuple[List[Node], List[Edge], int]
+Graph = Tuple[List[Node], List[Edge]]
 
 
 class Converter:
@@ -27,7 +27,6 @@ class Converter:
         return (
             [Converter.convert_node(z) for z in map.zones],
             [Converter.convert_edge(c) for c in map.connections],
-            map.nb_drones,
         )
 
     @staticmethod

@@ -7,8 +7,9 @@ WINDOW_TITLE = "Fly-in"
 
 
 class Visualizer:
-    def __init__(self, graph: Graph):
+    def __init__(self, graph: Graph, nb_drones: int):
         self.graph = graph
+        self.nb_drones = nb_drones
         self.window = VisualizerWindow()
         self.graph_view = GraphView(self.window)
 

@@ -38,7 +38,7 @@ def main():
                 print(f"D{drone}-{spot}", end=" ")
             print()
     graph = Converter.convert_graph(world)
-    visualizer = Visualizer(graph)
+    visualizer = Visualizer(graph, world.nb_drones)
     visualizer.run()
 
 
