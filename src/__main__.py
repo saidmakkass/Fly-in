@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 
 from .map_parser import load_map, LexingError, ParsingError, ValidationError
 from .simulation import Simulation
-from .visualizer import SimulationWindow
+from .visualizer import Converter, Visualizer
 
 
 def main():
@@ -37,7 +37,8 @@ def main():
             for drone, spot in steps.items():
                 print(f"D{drone}-{spot}", end=" ")
             print()
-    visualizer = SimulationWindow(world, turns)
+    graph = Converter.convert_graph(world)
+    visualizer = Visualizer(graph)
     visualizer.run()
 
 

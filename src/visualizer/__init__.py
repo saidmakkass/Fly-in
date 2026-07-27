@@ -1,1 +1,2 @@
-from .visualizer import SimulationWindow
+from .converter import Converter
+from .visualizer import Visualizer
