@@ -11,7 +11,8 @@ lint:
 	mypy $(NAME) --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --follow-imports=skip
 
 clean:
-	@rm -rf */__pycache__ */.mypy_cache .mypy_cache __pycache__
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
 
 debug:
 	@uv run python -m pdb -m $(NAME)
