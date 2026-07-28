@@ -42,9 +42,27 @@ class GraphView(arcade.View):
         self.__draw_background()
         self.map.draw()
 
+    def on_resize(self, width, height):
+        self.view_port.reset()
+        self.map.scale(width, height)
+
 
     def on_update(self, delta_time):
         pass
+
+    def on_mouse_drag(self, x, y, dx, dy, _buttons, _modifiers):
+        self.view_port.ox += dx
+        self.view_port.oy += dy
+
+    def on_mouse_scroll(self, sx, sy, scroll_x, scroll_y):
+        if scroll_y:
+            wx, wy = self.view_port.screen_to_world(sx, sy)
+            self.view_port.zoom += scroll_y
+            self.view_port.zoom = max(self.view_port.zoom, 1.0)
+            self.view_port.zoom = min(self.view_port.zoom, 100.0)
+
+            self.view_port.ox = sx - wx * self.view_port.zoom
+            self.view_port.oy = sy - wy * self.view_port.zoom
 
 
 class VisualizerWindow(arcade.Window):
