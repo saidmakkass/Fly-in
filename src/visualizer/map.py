@@ -4,19 +4,14 @@ from webcolors import name_to_rgb
 
 from .converter import Graph, Node, Edge
 from .viewport import Viewport
-
-ZONE_SIZE = 40
-LINE_WIDTH = 5
-
-ZONE_INNER_COLORS = {
-    "normal": arcade.types.Color(128, 128, 128, 128),
-    "restricted": arcade.types.Color(255, 255, 0, 128),
-    "priority": arcade.types.Color(0, 255, 255, 128),
-    "blocked": arcade.types.Color(255, 0, 0, 128),
-}
+from .constants import ZONE_SIZE, LINE_WIDTH, ZONE_INNER_COLORS, RAINBOW
 
 
 class Zone:
+
+    back = shapes.Group(0)
+    front = shapes.Group(1)
+
     def __init__(self, node: Node, batch: shapes.Batch, view_port: Viewport):
         self.name = node[0]
         self.x = node[1]
@@ -40,30 +35,62 @@ class Zone:
             pad + frac_y * height,
         )
 
+    def __rainbow_shapes(self, *s):
+        l3 = []
+        arc_angle = 360 / len(RAINBOW)
+
+        for i, color in enumerate(RAINBOW):
+            l3.append(
+                shapes.Arc(
+                    self.screen_x,
+                    self.screen_y,
+                    ZONE_SIZE,
+                    angle=arc_angle,
+                    start_angle=i * arc_angle,
+                    thickness=LINE_WIDTH,
+                    color=color,
+                    group=self.front,
+                    batch=self.batch,
+                )
+            )
+
+        return s + tuple(l3)
+
     def get_shapes(self):
         try:
             border_color = name_to_rgb(self.color)
         except:
-            border_color = (128, 128, 128)
+            border_color = (255, 255, 255)
         s1 = shapes.Circle(
-            self.screen_x, self.screen_y, ZONE_SIZE / 4, batch=self.batch
+            self.screen_x,
+            self.screen_y,
+            ZONE_SIZE / 4,
+            color=(255, 255, 255, 255),
+            group=self.back,
+            batch=self.batch,
         )
         s2 = shapes.Circle(
             self.screen_x,
             self.screen_y,
             ZONE_SIZE,
             color=ZONE_INNER_COLORS[self.type],
+            group=self.front,
             batch=self.batch,
         )
+
+        if self.color.lower() == "rainbow":
+            return self.__rainbow_shapes(s1, s2)
+
         s3 = shapes.Arc(
             self.screen_x,
             self.screen_y,
             ZONE_SIZE,
             thickness=LINE_WIDTH,
             color=border_color,
+            group=self.front,
             batch=self.batch,
         )
-        return (s1, s2, s3)
+        return s1, s2, s3
 
     def update(self):
         for shape in self.shapes:
