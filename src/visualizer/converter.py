@@ -1,10 +1,11 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 from ..map_parser import Map, Zone, Connection
 
 Node = Tuple[str, int, int, str, str, int]
 Edge = Tuple[int, int, int, int, int]
 Graph = Tuple[List[Node], List[Edge]]
+Turns = Dict[int, Dict[int, Node | Edge]]
 
 
 class Converter:
@@ -67,3 +68,26 @@ class Converter:
             connection.zone_b.y,
             connection.max_link_capacity,
         )
+
+    @staticmethod
+    def convert_turns(turns: Dict[int, Dict[int, Zone | Connection]]) -> Turns:
+        """
+        Convert simulation output to a standard format Turns.
+
+        Args:
+            turns (Dict): The simulation output.
+
+        Returns:
+            turns (Turns): The output in a standard format including turn 0.
+        """
+        return {
+            turn: {
+                drone: (
+                    Converter.convert_node(spot)
+                    if isinstance(spot, Zone)
+                    else Converter.convert_edge(spot)
+                )
+                for drone, spot in move.items()
+            }
+            for turn, move in turns.items()
+        }
