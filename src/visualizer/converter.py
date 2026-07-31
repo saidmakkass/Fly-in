@@ -12,6 +12,10 @@ class Converter:
     """
     Utility class to convert Fly-in related objects
     to objects used by Visualizer
+
+    This is an intermediary step done before starting the visualizer
+    and should be reimplemented by anyone wishing to use this exact
+    visualizer in their own project
     """
 
     @staticmethod
@@ -74,13 +78,16 @@ class Converter:
         """
         Convert simulation output to a standard format Turns.
 
+        The output should include turn 0,
+        And the Node/Edge a drone is at at any given turn (waiting or arriving)
         Args:
             turns (Dict): The simulation output.
 
         Returns:
-            turns (Turns): The output in a standard format including turn 0.
+            turns (Turns): The output in a standard format.
         """
-        return {
+        nb_drones = len(turns[0])
+        output = {
             turn: {
                 drone: (
                     Converter.convert_node(spot)
@@ -91,3 +98,9 @@ class Converter:
             }
             for turn, move in turns.items()
         }
+        print(output)
+        for turn in output:
+            for drone in range(1, nb_drones + 1):
+                if drone not in output[turn]:
+                    output[turn][drone] = output[turn - 1][drone]
+        return output
