@@ -1,24 +1,26 @@
 import arcade
 from importlib.resources import files
 
-from .converter import Graph
+from .converter import Graph, Turns
 from .scaler import Scaler
 from .map import Map
+from .drone import Fleet
 from .constants import WINDOW_TITLE
 
 
 class Visualizer:
-    def __init__(self, graph: Graph, nb_drones: int):
-        self.nb_drones = nb_drones
+    def __init__(self, graph: Graph, nb_drones: int, turns: Turns):
         self.window = VisualizerWindow()
-        self.graph_view = GraphView(self.window, graph)
+        self.graph_view = GraphView(self.window, graph, nb_drones, turns)
 
     def run(self):
         self.window.run(self.graph_view)
 
 
 class GraphView(arcade.View):
-    def __init__(self, window: arcade.Window, graph: Graph):
+    def __init__(
+        self, window: arcade.Window, graph: Graph, nb_drones: int, turns: Turns
+    ):
         super().__init__(window)
         arcade.enable_timings()
         self.fps = arcade.Text("", 0, self.height - 14, font_size=14)
@@ -29,10 +31,21 @@ class GraphView(arcade.View):
             window.width,
             window.height,
         )
-        self.toggles = {"popup": False}
+        self.toggles = {
+            "map": True,
+            "drones": True,
+            "popup": False,
+        }
         self.map = Map(graph, self.scaler, self.toggles)
         self.mouse = arcade.Sprite()
         self.mouse.hit_box = arcade.hitbox.HitBox(((0, 0), (1, 1)))
+
+        self.nb_drones = nb_drones
+        self.turns = turns
+        self.turn = 0
+        self.max_turn = len(turns) - 1
+
+        self.fleet = Fleet(nb_drones, self.map, turns)
 
     def __load_assets(self):
         assets_dir = files(__package__) / "assets"
@@ -49,7 +62,10 @@ class GraphView(arcade.View):
 
     def on_draw(self):
         self.__draw_background()
-        self.map.draw()
+        if self.toggles["map"]:
+            self.map.draw()
+        if self.toggles["drones"]:
+            self.fleet.draw()
         self.fps.draw()
 
     def on_resize(self, width, height):
@@ -62,10 +78,13 @@ class GraphView(arcade.View):
         self.fps.text = f"FPS: {round(arcade.get_fps())}"
         self.map.collision_check(self.mouse)
 
+        self.fleet.update(delta_time)
+
     def on_mouse_drag(self, x, y, dx, dy, _buttons, _modifiers):
         self.on_mouse_motion(x, y, dx, dy)
-        self.scaler.ox += dx
-        self.scaler.oy += dy
+        if self.toggles["map"]:
+            self.scaler.ox += dx
+            self.scaler.oy += dy
 
     def on_mouse_scroll(self, sx, sy, scroll_x, scroll_y):
         if scroll_y:
@@ -91,8 +110,22 @@ class GraphView(arcade.View):
                 self.window.close()
             case (_, arcade.key.R):
                 self.scaler.reset()
+                self.turn = 0
+                self.fleet.execute_turn(self.turns[self.turn])
             case (_, arcade.key.P):
                 self.toggles["popup"] = not self.toggles["popup"]
+            case (_, arcade.key.M):
+                self.toggles["map"] = not self.toggles["map"]
+            case (_, arcade.key.D):
+                self.toggles["drones"] = not self.toggles["drones"]
+            case (_, arcade.key.RIGHT):
+                self.turn += 1
+                self.turn = min(self.turn, self.max_turn)
+                self.fleet.execute_turn(self.turns[self.turn])
+            case (_, arcade.key.LEFT):
+                self.turn -= 1
+                self.turn = max(self.turn, 0)
+                self.fleet.execute_turn(self.turns[self.turn])
             case _:
                 print(f"{modifiers = }, {symbol = }")
 

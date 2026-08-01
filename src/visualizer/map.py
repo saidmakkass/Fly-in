@@ -233,14 +233,21 @@ class Map:
         self.toggles = toggles
 
         nodes, edges = graph
-        self.cons = {
-            edge[0]: Connection(*edge, scaler, self.sprite_list, self.batch)
-            for edge in edges
-        }
-        self.zones = {
-            node[0]: Zone(*node, scaler, self.sprite_list, self.batch)
-            for node in nodes
-        }
+        self.spots = {}
+        self.spots.update(
+            {
+                edge[0]: Connection(
+                    *edge, scaler, self.sprite_list, self.batch
+                )
+                for edge in edges
+            }
+        )
+        self.spots.update(
+            {
+                node[0]: Zone(*node, scaler, self.sprite_list, self.batch)
+                for node in nodes
+            }
+        )
         self.popup = Popup(self.front)
 
     def draw(self):
@@ -250,10 +257,8 @@ class Map:
             self.popup.draw()
 
     def resize(self):
-        for zone in self.zones.values():
-            zone.resize()
-        for con in self.cons.values():
-            con.resize()
+        for spot in self.spots.values():
+            spot.resize()
 
     def collision_check(self, mouse: arcade.Sprite):
         if not self.toggles["popup"]:

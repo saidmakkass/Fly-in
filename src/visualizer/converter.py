@@ -5,7 +5,8 @@ from ..map_parser import Map, Zone, Connection
 Node = Tuple[str, int, int, str, str, int]
 Edge = Tuple[str, int, int, int, int, int]
 Graph = Tuple[List[Node], List[Edge]]
-Turns = Dict[int, Dict[int, Node | Edge]]
+Turn = Dict[int, Node | Edge]
+Turns = Dict[int, Turn]
 
 
 class Converter:

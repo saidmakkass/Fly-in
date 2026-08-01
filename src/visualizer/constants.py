@@ -71,3 +71,5 @@ RAINBOW = [
 ]
 
 INFO_COLORS = (255, 69, 0), (204, 255, 0)
+
+TURN_DURATION = 0.5
