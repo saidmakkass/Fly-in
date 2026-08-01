@@ -3,7 +3,7 @@ from typing import Tuple, List, Dict
 from ..map_parser import Map, Zone, Connection
 
 Node = Tuple[str, int, int, str, str, int]
-Edge = Tuple[int, int, int, int, int]
+Edge = Tuple[str, int, int, int, int, int]
 Graph = Tuple[List[Node], List[Edge]]
 Turns = Dict[int, Dict[int, Node | Edge]]
 
@@ -66,6 +66,7 @@ class Converter:
             connection (Edge): The connection as a Edge.
         """
         return (
+            connection.name,
             connection.zone_a.x,
             connection.zone_a.y,
             connection.zone_b.x,
@@ -98,7 +99,6 @@ class Converter:
             }
             for turn, move in turns.items()
         }
-        print(output)
         for turn in output:
             for drone in range(1, nb_drones + 1):
                 if drone not in output[turn]:
