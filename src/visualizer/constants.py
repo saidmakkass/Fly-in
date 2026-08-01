@@ -1,5 +1,7 @@
 import arcade
 
+WINDOW_TITLE = "Fly-in"
+
 WHITE_PIXEL = arcade.Texture.create_empty(
     "white_pixel",
     (1, 1),

@@ -2,6 +2,7 @@ import arcade
 import math
 from pyglet import shapes
 from webcolors import name_to_rgb
+from typing import Dict
 
 from .converter import Graph
 from .scaler import Scaler
@@ -225,10 +226,11 @@ class Map:
     back = shapes.Group(0)
     front = shapes.Group(1)
 
-    def __init__(self, graph: Graph, scaler: Scaler):
+    def __init__(self, graph: Graph, scaler: Scaler, toggles: Dict[str, bool]):
         self.sprite_list = arcade.SpriteList(use_spatial_hash=True)
         self.batch = shapes.Batch()
         self.scaler = scaler
+        self.toggles = toggles
 
         nodes, edges = graph
         self.cons = {
@@ -244,7 +246,8 @@ class Map:
     def draw(self):
         self.resize()
         self.batch.draw()
-        self.popup.draw()
+        if self.toggles["popup"]:
+            self.popup.draw()
 
     def resize(self):
         for zone in self.zones.values():
@@ -253,6 +256,8 @@ class Map:
             con.resize()
 
     def collision_check(self, mouse: arcade.Sprite):
+        if not self.toggles["popup"]:
+            return
         hit = arcade.check_for_collision_with_list(mouse, self.sprite_list)
         self.popup.active = bool(hit)
         if not hit:
