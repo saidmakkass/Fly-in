@@ -223,8 +223,8 @@ class Popup:
 
 
 class Map:
-    back = shapes.Group(0)
-    front = shapes.Group(1)
+    back = shapes.Group(100)
+    front = shapes.Group(101)
 
     def __init__(self, graph: Graph, scaler: Scaler, toggles: Dict[str, bool]):
         self.sprite_list = arcade.SpriteList(use_spatial_hash=True)
@@ -249,6 +249,7 @@ class Map:
             }
         )
         self.popup = Popup(self.front)
+        self.resize()
 
     def draw(self):
         self.resize()
