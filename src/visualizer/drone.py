@@ -1,5 +1,5 @@
 import arcade
-import math
+from typing import List
 
 from .map import Map
 from .converter import Turn
@@ -7,14 +7,17 @@ from .constants import TURN_DURATION
 
 
 class Drone(arcade.Sprite):
-    def __init__(self, id: int, start):
+    def __init__(self, textures: arcade.Texture, id: int, start):
         super().__init__(
-            arcade.texture.make_circle_texture(20, (0, 255, 255)),
+            textures[0],
             center_x=start.center_x,
             center_y=start.center_y,
+            scale=1,
         )
+        self.textures = textures
         self.id = id
         self.set_target(start)
+        self.animation_timer = 0
 
     @property
     def target_x(self):
@@ -26,8 +29,17 @@ class Drone(arcade.Sprite):
     def set_target(self, target):
         self.spot = target
 
+    def update_animation(self, delta_time: float = 1 / 60):
+        self.animation_timer += delta_time
+
+        if self.animation_timer >= 0.1:  # 10 FPS animation
+            self.animation_timer = 0
+            self.cur_texture_index = (self.cur_texture_index + 1) % len(self.textures)
+            self.texture = self.textures[self.cur_texture_index]
 
     def update(self, delta_time, *args, **kwargs):
+        self.update_animation(delta_time)
+
         dx = self.target_x - self.center_x
         dy = self.target_y - self.center_y
 
@@ -42,11 +54,11 @@ class Drone(arcade.Sprite):
             self.center_y = self.target_y
 
 class Fleet:
-    def __init__(self, nb_drones: int, map: Map, turns):
+    def __init__(self, textures: List[arcade.Texture], nb_drones: int, map: Map, turns):
         self.drones = arcade.SpriteList()
         self.map = map
         for id in range(1, nb_drones + 1):
-            self.drones.append(Drone(id, map.spots[turns[0][id][0]]))
+            self.drones.append(Drone(textures, id, map.spots[turns[0][id][0]]))
 
     def execute_turn(self, turn: Turn):
         for drone in self.drones:

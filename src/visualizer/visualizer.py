@@ -45,7 +45,7 @@ class GraphView(arcade.View):
         self.turn = 0
         self.max_turn = len(turns) - 1
 
-        self.fleet = Fleet(nb_drones, self.map, turns)
+        self.fleet = Fleet(self.drone_textures, nb_drones, self.map, turns)
 
     def __load_assets(self):
         assets_dir = files(__package__) / "assets"
@@ -53,6 +53,8 @@ class GraphView(arcade.View):
         self.background_image = arcade.load_texture(
             assets_dir / "background.jpg"
         )
+        self.drone_textures = arcade.load_spritesheet(assets_dir / "drone.png").get_texture_grid((48,48), 4, 4)
+
 
     def __draw_background(self):
         arcade.draw_texture_rect(
@@ -96,7 +98,6 @@ class GraphView(arcade.View):
             ) / self.scaler.zoom
             self.scaler.zoom += scroll_y * 0.1
             self.scaler.zoom = max(self.scaler.zoom, 1.0)
-            self.scaler.zoom = min(self.scaler.zoom, 10.0)
             self.scaler.ox = sx - prev_sx * self.scaler.zoom - self.scaler.pad
             self.scaler.oy = sy - prev_sy * self.scaler.zoom - self.scaler.pad
         self.mouse.position = sx, sy
@@ -126,6 +127,8 @@ class GraphView(arcade.View):
                 self.turn -= 1
                 self.turn = max(self.turn, 0)
                 self.fleet.execute_turn(self.turns[self.turn])
+            case (_, arcade.key.F):
+                self.window.set_fullscreen(not self.window.fullscreen)
             case _:
                 print(f"{modifiers = }, {symbol = }")
 
