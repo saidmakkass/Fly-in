@@ -46,6 +46,7 @@ class GraphView(arcade.View):
         self.max_turn = len(turns) - 1
 
         self.fleet = Fleet(self.drone_textures, nb_drones, self.map, turns)
+        self.fleet.execute_turn(self.turns[self.turn])
 
     def __load_assets(self):
         assets_dir = files(__package__) / "assets"
@@ -77,7 +78,7 @@ class GraphView(arcade.View):
         self.map.resize()
 
     def on_update(self, delta_time):
-        self.fps.text = f"FPS: {round(arcade.get_fps())}"
+        self.fps.text = f"FPS: {round(arcade.get_fps())}  Turn {self.turn}/{self.max_turn}"
         self.map.collision_check(self.mouse)
 
         self.fleet.update(delta_time)

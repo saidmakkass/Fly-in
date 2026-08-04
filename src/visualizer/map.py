@@ -40,6 +40,7 @@ class Zone(arcade.Sprite):
         self.sprite_list = sprite_list
         self.batch = batch
         self.shapes = self.get_shapes(color)
+        self.count = 0
         super().__init__(scale=0)
         self.hit_box = arcade.hitbox.HitBox(
             [
@@ -95,7 +96,7 @@ class Zone(arcade.Sprite):
             batch=self.batch,
         )
 
-        if color.lower() == "rainbow":
+        if color and color.lower() == "rainbow":
             return self.__rainbow_shapes(s1, s2)
 
         s3 = shapes.Arc(
@@ -143,6 +144,7 @@ class Connection(arcade.Sprite):
         self.sprite_list = sprite_list
         self.batch = batch
         self.shape = self.get_shape()
+        self.count = 0
 
         self.sprite_list.append(self)
 
@@ -204,7 +206,7 @@ class Popup:
 
         name.text = f"Name: {spot.name}"
         type.text = f"Type: {spot.type}"
-        drones.text = f"Max Drones: {spot.max_drones}"
+        drones.text = f"Drones: {spot.count}/{spot.max_drones}"
 
         max_width = max(t.content_width for t in self.text.values())
 

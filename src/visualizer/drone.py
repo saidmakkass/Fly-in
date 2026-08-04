@@ -1,9 +1,10 @@
 import arcade
+import math
 from typing import List
 
 from .map import Map
 from .converter import Turn
-from .constants import TURN_DURATION
+from .constants import TURN_DURATION, ZONE_RADIUS
 
 
 class Drone(arcade.Sprite):
@@ -16,6 +17,10 @@ class Drone(arcade.Sprite):
         )
         self.textures = textures
         self.id = id
+        self.spot = start
+        self.spot.count += 1
+        self.offset_x = 0
+        self.offset_y = 0
         self.set_target(start)
         self.animation_timer = 0
 
@@ -26,13 +31,27 @@ class Drone(arcade.Sprite):
     def target_y(self):
         return self.spot.center_y
 
+    def set_offset(self, count):
+        if count <= 1:
+            self.offset_x = 0.0
+            self.offset_y = 0.0
+            return
+
+        angle = (2 * math.pi * self.id) / count
+        radius = ZONE_RADIUS
+        self.offset_x = radius * math.sin(angle)
+        self.offset_y = radius * math.cos(angle)
+
     def set_target(self, target):
+        if self.spot:
+            self.spot.count -= 1
         self.spot = target
+        self.spot.count += 1
 
     def update_animation(self, delta_time: float = 1 / 60):
         self.animation_timer += delta_time
 
-        if self.animation_timer >= 0.1:  # 10 FPS animation
+        if self.animation_timer >= 0.1:
             self.animation_timer = 0
             self.cur_texture_index = (self.cur_texture_index + 1) % len(self.textures)
             self.texture = self.textures[self.cur_texture_index]
@@ -40,9 +59,8 @@ class Drone(arcade.Sprite):
     def update(self, delta_time, *args, **kwargs):
         self.update_animation(delta_time)
 
-        dx = self.target_x - self.center_x
-        dy = self.target_y - self.center_y
-
+        dx = self.target_x + self.offset_x - self.center_x
+        dy = self.target_y + self.offset_y - self.center_y
         vx = dx / TURN_DURATION
         vy = dy / TURN_DURATION
 
@@ -63,7 +81,11 @@ class Fleet:
     def execute_turn(self, turn: Turn):
         for drone in self.drones:
             spot_name = turn[drone.id][0]
-            drone.set_target(self.map.spots[spot_name])
+            spot = self.map.spots[spot_name]
+            drone.set_target(spot)
+        for drone in self.drones:
+            drone.set_offset(drone.spot.count)
+
 
     def update(self, delta_time):
         self.drones.update(delta_time)
