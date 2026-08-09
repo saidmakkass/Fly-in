@@ -1,4 +1,4 @@
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Iterator
 from enum import Enum, auto
 from dataclasses import dataclass
 
@@ -54,10 +54,10 @@ class Zone:
     location: Optional[Location] = None
 
     type: str = "normal"
-    color: str | None = None
+    color: str = "white"
     max_drones: int = 1
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name)
 
     def __str__(self) -> str:
@@ -92,23 +92,23 @@ class Connection:
     def y(self) -> float:
         return (self.zone_a.y + self.zone_b.y) / 2
 
-    def get_other(self, zone: Zone):
+    def get_other(self, zone: Zone) -> Zone:
         if zone not in self:
             raise ValueError(f"{zone.name} not in {self.name}")
         if zone is self.zone_a:
             return self.zone_b
         return self.zone_a
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         if not isinstance(item, Zone):
-            return NotImplemented
+            return False
         return item in (self.zone_a, self.zone_b)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Zone]:
         return iter((self.zone_a, self.zone_b))
 
     def __str__(self) -> str:
-           return self.name
+        return self.name
 
     def __repr__(self) -> str:
         return self.name

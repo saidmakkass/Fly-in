@@ -1,30 +1,10 @@
 from typing import List
+from webcolors import name_to_rgb
 
-from .classes import Map, Zone, UnvalidatedConnection, Connection
+from .classes import Map, Zone, UnvalidatedConnection, Connection, Location
 from .errors import ValidationError
 
 VALID_ZONE_TYPES = ["normal", "blocked", "restricted", "priority"]
-
-VALID_COLORS = [
-    None,
-    "brown",
-    "gold",
-    "orange",
-    "blue",
-    "crimson",
-    "lime",
-    "black",
-    "rainbow",
-    "green",
-    "yellow",
-    "maroon",
-    "darkred",
-    "red",
-    "purple",
-    "violet",
-    "cyan",
-    "magenta",
-]
 
 
 class Validator:
@@ -64,7 +44,10 @@ class Validator:
                 raise ValidationError(
                     zone.location, "Zone Overlaps A Previous One"
                 )
-            if zone.color not in VALID_COLORS:
+            try:
+                if zone.color.lower() != "rainbow":
+                    name_to_rgb(zone.color)
+            except ValueError:
                 raise ValidationError(zone.location, "Zone With Invalid Color")
             if zone.type not in VALID_ZONE_TYPES:
                 raise ValidationError(zone.location, "Zone With Invalid Type")
@@ -95,6 +78,8 @@ class Validator:
                 )
             zone_a = self.zones_by_name[connection.zone_a]
             zone_b = self.zones_by_name[connection.zone_b]
+            assert isinstance(zone_a.location, Location)
+            assert isinstance(zone_b.location, Location)
             if connection.location.line < zone_a.location.line:
                 raise ValidationError(
                     connection.location,
@@ -118,7 +103,8 @@ class Validator:
     def validate(self) -> Map:
         self.__validate_zones()
         validated_connections = self.__validate_connections()
-
+        assert isinstance(self.start_hub, Zone)
+        assert isinstance(self.end_hub, Zone)
         return Map(
             self.nb_drones,
             self.start_hub,

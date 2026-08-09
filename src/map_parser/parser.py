@@ -54,7 +54,7 @@ class Parser:
         x: int
         y: int
         zone_type: str = "normal"
-        color: str | None = None
+        color: str = "white"
         max_drones: int = 1
         parsed_metadata = set()
 

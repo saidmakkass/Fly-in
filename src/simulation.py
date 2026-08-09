@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import Dict, Tuple
 from heapq import heappop, heappush
 
 
@@ -45,7 +45,11 @@ class Simulation:
             for neighbor, con in self.graph.neighbors[zone]:
                 cost = 2 if neighbor.type == "restricted" else 1
                 extra_cost = 0 if neighbor.type == "priority" else cost
-                if (not self.reservation_table.is_reserved( turn + cost, neighbor )) and (not self.reservation_table.is_reserved(turn + 1, con)):
+                if (
+                    not self.reservation_table.is_reserved(
+                        turn + cost, neighbor
+                    )
+                ) and (not self.reservation_table.is_reserved(turn + 1, con)):
                     if turn + cost < dist.get(neighbor, float("inf")):
                         dist[neighbor] = turn + cost
                         prev[neighbor] = (zone, con)

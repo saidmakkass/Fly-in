@@ -17,10 +17,10 @@ class Scaler:
         self.resize(width, height)
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.zoom = 1.0
-        self.ox = 0
-        self.oy = 0
+        self.ox = 0.0
+        self.oy = 0.0
 
     def resize(self, width: int, height: int) -> None:
         self.width = width - self.pad * 2
@@ -31,5 +31,5 @@ class Scaler:
         frac_y = (y - self.min_y) / self.span_y
         return (
             frac_x * self.width * self.zoom + self.ox + self.pad,
-            frac_y * self.height* self.zoom + self.oy + self.pad,
+            frac_y * self.height * self.zoom + self.oy + self.pad,
         )

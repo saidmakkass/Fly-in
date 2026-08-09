@@ -13,7 +13,7 @@ class Visualizer:
         self.window = VisualizerWindow()
         self.graph_view = GraphView(self.window, graph, nb_drones, turns)
 
-    def run(self):
+    def run(self) -> None:
         self.window.run(self.graph_view)
 
 
@@ -48,22 +48,23 @@ class GraphView(arcade.View):
         self.fleet = Fleet(self.drone_textures, nb_drones, self.map, turns)
         self.fleet.execute_turn(self.turns[self.turn])
 
-    def __load_assets(self):
+    def __load_assets(self) -> None:
         assets_dir = files(__package__) / "assets"
 
         self.background_image = arcade.load_texture(
             assets_dir / "background.jpg"
         )
-        self.drone_textures = arcade.load_spritesheet(assets_dir / "drone.png").get_texture_grid((48,48), 4, 4)
+        self.drone_textures = arcade.load_spritesheet(
+            assets_dir / "drone.png"
+        ).get_texture_grid((48, 48), 4, 4)
 
-
-    def __draw_background(self):
+    def __draw_background(self) -> None:
         arcade.draw_texture_rect(
             self.background_image,
             arcade.rect.Viewport(0, 0, self.width, self.height),
         )
 
-    def on_draw(self):
+    def on_draw(self) -> None:
         self.__draw_background()
         if self.toggles["map"]:
             self.map.draw()
@@ -71,25 +72,31 @@ class GraphView(arcade.View):
             self.fleet.draw()
         self.fps.draw()
 
-    def on_resize(self, width, height):
+    def on_resize(self, width: int, height: int) -> None:
         self.fps.position = 0, height - 14
         self.scaler.resize(width, height)
         self.scaler.reset()
         self.map.resize()
 
-    def on_update(self, delta_time):
-        self.fps.text = f"FPS: {round(arcade.get_fps())}  Turn {self.turn}/{self.max_turn}"
+    def on_update(self, delta_time: float) -> None:
+        self.fps.text = (
+            f"FPS: {round(arcade.get_fps())}  Turn {self.turn}/{self.max_turn}"
+        )
         self.map.collision_check(self.mouse)
 
         self.fleet.update(delta_time)
 
-    def on_mouse_drag(self, x, y, dx, dy, _buttons, _modifiers):
+    def on_mouse_drag(
+        self, x: int, y: int, dx: int, dy: int, _buttons: int, _modifiers: int
+    ) -> None:
         self.on_mouse_motion(x, y, dx, dy)
         if self.toggles["map"]:
             self.scaler.ox += dx
             self.scaler.oy += dy
 
-    def on_mouse_scroll(self, sx, sy, scroll_x, scroll_y):
+    def on_mouse_scroll(
+        self, sx: int, sy: int, scroll_x: int, scroll_y: int
+    ) -> None:
         if scroll_y:
             prev_sx = (
                 sx - self.scaler.ox - self.scaler.pad
@@ -103,10 +110,10 @@ class GraphView(arcade.View):
             self.scaler.oy = sy - prev_sy * self.scaler.zoom - self.scaler.pad
         self.mouse.position = sx, sy
 
-    def on_mouse_motion(self, x, y, dx, dy):
+    def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         self.mouse.position = (x, y)
 
-    def on_key_press(self, symbol, modifiers):
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
         match modifiers, symbol:
             case (_, arcade.key.ESCAPE):
                 self.window.close()
@@ -135,6 +142,6 @@ class GraphView(arcade.View):
 
 
 class VisualizerWindow(arcade.Window):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(title=WINDOW_TITLE, resizable=True)
         self.center_window()

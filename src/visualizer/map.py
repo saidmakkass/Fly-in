@@ -53,7 +53,7 @@ class Zone(arcade.Sprite):
         )
         sprite_list.append(self)
 
-    def __rainbow_shapes(self, *s):
+    def __rainbow_shapes(self, *s: tuple) -> tuple:
         l3 = []
         arc_angle = 360 / len(RAINBOW)
 
@@ -74,10 +74,10 @@ class Zone(arcade.Sprite):
 
         return s + tuple(l3)
 
-    def get_shapes(self, color):
+    def get_shapes(self, color: str) -> tuple:
         try:
             border_color = name_to_rgb(color)
-        except:
+        except ValueError:
             border_color = (255, 255, 255)
         s1 = shapes.Circle(
             0,
@@ -110,7 +110,7 @@ class Zone(arcade.Sprite):
         )
         return s1, s2, s3
 
-    def resize(self):
+    def resize(self) -> None:
         sx, sy = self.scaler.scale(self.x, self.y)
         self.center_x, self.center_y = sx, sy
         for shape in self.shapes:
@@ -148,7 +148,7 @@ class Connection(arcade.Sprite):
 
         self.sprite_list.append(self)
 
-    def get_shape(self):
+    def get_shape(self) -> shapes.Line:
         s1 = shapes.Line(
             self.start_x,
             self.start_y,
@@ -160,7 +160,7 @@ class Connection(arcade.Sprite):
         )
         return s1
 
-    def resize(self):
+    def resize(self) -> None:
         x1, y1 = self.scaler.scale(self.start_x, self.start_y)
         x2, y2 = self.scaler.scale(self.end_x, self.end_y)
         dx = x2 - x1
@@ -195,7 +195,7 @@ class Popup:
             ),
         }
 
-    def update(self, x, y, spot: Zone | Connection):
+    def update(self, x: float, y: float, spot: Zone | Connection) -> None:
         if not isinstance(spot, (Zone, Connection)):
             self.active = False
             return
@@ -218,7 +218,7 @@ class Popup:
         self.background.width = max_width + 14 * 2
         self.background.height = 14 * 7
 
-    def draw(self):
+    def draw(self) -> None:
         if not self.active:
             return
         self.batch.draw()
@@ -253,17 +253,17 @@ class Map:
         self.popup = Popup(self.front)
         self.resize()
 
-    def draw(self):
+    def draw(self) -> None:
         self.resize()
         self.batch.draw()
         if self.toggles["popup"]:
             self.popup.draw()
 
-    def resize(self):
+    def resize(self) -> None:
         for spot in self.spots.values():
             spot.resize()
 
-    def collision_check(self, mouse: arcade.Sprite):
+    def collision_check(self, mouse: arcade.Sprite) -> None:
         if not self.toggles["popup"]:
             return
         hit = arcade.check_for_collision_with_list(mouse, self.sprite_list)

@@ -1,4 +1,3 @@
-from dataclasses import dataclass, field
 from typing import List, Dict, Tuple
 
 from .map_parser import Zone, Connection
@@ -26,18 +25,6 @@ class Graph:
             wait_con = Connection(zone, zone, max_link_capacity=self.nb_drones)
             neighbors.append((zone, wait_con))
         return output
-
-    def __repr__(self):
-        return "\n".join(
-            [
-                f"{z}: {n}"
-                for n in [
-                    {z.name: [n.name for n in n]}
-                    for z, n in self.neighbors.items()
-                ]
-                for z, n in n.items()
-            ]
-        )
 
 
 class ReservationTable:
@@ -68,10 +55,17 @@ class ReservationTable:
 
 class Path:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.path: Dict[int, Zone | Connection] = dict()
 
-    def reconstruct(self, prev: Dict[Zone, Tuple[Zone, Connection]], dist: Dict[Zone, int], start: Zone, end: Zone, reservation_table: ReservationTable):
+    def reconstruct(
+        self,
+        prev: Dict[Zone, Tuple[Zone, Connection]],
+        dist: Dict[Zone, int],
+        start: Zone,
+        end: Zone,
+        reservation_table: ReservationTable,
+    ) -> None:
         path: Dict[int, Zone | Connection] = dict()
         cur = end
         while cur is not start:
@@ -79,7 +73,9 @@ class Path:
             path[turn] = cur
             reservation_table.reserve(turn, cur)
             zone, con = prev[cur]
-            waits = dist[cur] - dist[zone] - (1 if cur.type == "restricted" else 0)
+            waits = (
+                dist[cur] - dist[zone] - (1 if cur.type == "restricted" else 0)
+            )
             for w in range(1, waits):
                 reservation_table.reserve(dist[zone] + w, zone)
             if cur.type == "restricted":
@@ -88,12 +84,3 @@ class Path:
             reservation_table.reserve(turn, con)
             cur = zone
         self.path = dict(sorted(path.items()))
-
-    def __repr__(self):
-        dist = "\n\t" + "\n\t".join(
-            f"{z.name}: {d}" for z, d in self.dist.items()
-        )
-        prev = "\n\t" + "\n\t".join(
-            f"{z.name}: {d[0].name}" for z, d in self.prev.items()
-        )
-        return f"dist: {dist}\n" f"prev: {prev}\n"
