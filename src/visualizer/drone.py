@@ -8,14 +8,12 @@ from .constants import TURN_DURATION, ZONE_RADIUS
 
 
 class Drone(arcade.Sprite):
-    def __init__(self, textures: arcade.Texture, id: int, start: Zone) -> None:
+    def __init__(self, id: int, start: Zone) -> None:
         super().__init__(
-            textures[0],
+            arcade.texture.make_circle_texture(20, (0, 255, 255)),
             center_x=start.center_x,
             center_y=start.center_y,
-            scale=1,
         )
-        self.textures = textures
         self.id = id
         self.center_x = 0.0
         self.center_y = 0.0
@@ -52,6 +50,7 @@ class Drone(arcade.Sprite):
         self.spot.count += 1
 
     def update_animation(self, delta_time: float = 1 / 60) -> None:
+        return
         self.animation_timer += delta_time
 
         if self.animation_timer >= 0.1:
@@ -80,7 +79,6 @@ class Drone(arcade.Sprite):
 class Fleet:
     def __init__(
         self,
-        textures: List[arcade.Texture],
         nb_drones: int,
         map: Map,
         turns: Turns,
@@ -88,7 +86,7 @@ class Fleet:
         self.drones = arcade.SpriteList()
         self.map = map
         for id in range(1, nb_drones + 1):
-            self.drones.append(Drone(textures, id, map.spots[turns[0][id][0]]))
+            self.drones.append(Drone(id, map.spots[turns[0][id][0]]))
 
     def execute_turn(self, turn: Turn) -> None:
         for drone in self.drones:

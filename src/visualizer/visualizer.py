@@ -45,7 +45,7 @@ class GraphView(arcade.View):
         self.turn = 0
         self.max_turn = len(turns) - 1
 
-        self.fleet = Fleet(self.drone_textures, nb_drones, self.map, turns)
+        self.fleet = Fleet(nb_drones, self.map, turns)
         self.fleet.execute_turn(self.turns[self.turn])
 
     def __load_assets(self) -> None:
@@ -54,9 +54,6 @@ class GraphView(arcade.View):
         self.background_image = arcade.load_texture(
             assets_dir / "background.jpg"
         )
-        self.drone_textures = arcade.load_spritesheet(
-            assets_dir / "drone.png"
-        ).get_texture_grid((48, 48), 4, 4)
 
     def __draw_background(self) -> None:
         arcade.draw_texture_rect(
