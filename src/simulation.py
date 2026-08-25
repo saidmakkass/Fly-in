@@ -1,7 +1,6 @@
 from typing import Dict, Tuple
 from heapq import heappop, heappush
 
-
 from .map_parser import Map, Zone, Connection
 from .classes import Graph, ReservationTable, Path
 
@@ -20,7 +19,6 @@ class Simulation:
         queue = [(0, 0, self.start_hub)]
         path = Path()
 
-        wait_counter = 0
         while queue:
             turn, extra_cost, zone = heappop(queue)
 
@@ -33,12 +31,6 @@ class Simulation:
                     self.reservation_table,
                 )
                 break
-
-            if extra_cost == 3:
-                wait_counter += 1
-
-            # if wait_counter > len(self.graph.zones) * 2:
-            #     break
 
             if len(self.graph.neighbors[zone]) == 1:
                 break

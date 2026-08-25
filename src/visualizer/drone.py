@@ -1,6 +1,5 @@
 import arcade
 import math
-from typing import List
 
 from .map import Map, Zone, Connection
 from .converter import Turn, Turns

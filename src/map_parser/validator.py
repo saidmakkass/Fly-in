@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 from webcolors import name_to_rgb
 
 from .classes import Map, Zone, UnvalidatedConnection, Connection, Location
@@ -100,9 +100,11 @@ class Validator:
             )
         return validated_connections
 
-    def __validate_no_path(self, cons: List[Connection]):
-        stack = [self.start_hub]
-        visited = {
+    def __validate_no_path(self, cons: List[Connection]) -> None:
+        assert isinstance(self.start_hub, Zone)
+        assert isinstance(self.end_hub, Zone)
+        stack: List[Zone] = [self.start_hub]
+        visited: Set[Zone] = {
             self.start_hub,
         }
 
@@ -122,11 +124,13 @@ class Validator:
                 visited.add(neighbor)
         if self.end_hub not in visited:
             print(visited)
-            raise ValidationError(self.end_hub.location, f"No Path")
+            raise ValidationError(self.end_hub.location, "No Path")
 
-    def __validate_disconnected_graph(self, cons: List[Connection]):
-        stack = [self.start_hub]
-        visited = {
+    def __validate_disconnected_graph(self, cons: List[Connection]) -> None:
+        assert isinstance(self.start_hub, Zone)
+        assert isinstance(self.end_hub, Zone)
+        stack: List[Zone] = [self.start_hub]
+        visited: Set[Zone] = {
             self.start_hub,
         }
 
@@ -146,9 +150,9 @@ class Validator:
                 visited.add(neighbor)
         for zone in self.zones:
             if zone not in visited:
-                raise ValidationError(zone.location, f"Disconnected Graph")
+                raise ValidationError(zone.location, "Disconnected Graph")
 
-    def __validate_graph(self, cons: List[Connection]):
+    def __validate_graph(self, cons: List[Connection]) -> None:
         self.__validate_no_path(cons)
         self.__validate_disconnected_graph(cons)
 
