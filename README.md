@@ -72,6 +72,40 @@ Visualizing per-turn positions clarifies scheduling decisions, highlights bottle
 
 ---
 
+## Project Structure
+
+```
+Fly-in/
+├─ Makefile
+├─ pyproject.toml
+├─ README.md
+├─ maps/
+│  ├─ README.md
+│  ├─ easy/
+│  ├─ medium/
+│  └─ hard/
+└─ src/
+  ├─ __main__.py
+  ├─ classes.py
+  ├─ simulation.py
+  ├─ map_parser/
+  │  ├─ __init__.py
+  │  ├─ classes.py
+  │  ├─ lexer.py
+  │  ├─ parser.py
+  │  ├─ validator.py
+  │  └─ errors.py
+  └─ visualizer/
+    ├─ converter.py
+    ├─ visualizer.py
+    ├─ map.py
+    ├─ drone.py
+    ├─ scaler.py
+    └─ constants.py
+```
+
+---
+
 ## Resources
 
 <details>
