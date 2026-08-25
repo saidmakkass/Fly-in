@@ -10,6 +10,7 @@ class Location:
     column: int
 
     def __repr__(self) -> str:
+        """Return a compact location string: file:line:column."""
         return f"{self.file_path}:{self.line}:{self.column}"
 
 
@@ -39,6 +40,7 @@ class Token:
     location: Location
 
     def __repr__(self) -> str:
+        """Return a short representation including location, type and value."""
         return f"{self.location} - {self.type.name}" + (
             f"({self.value})" if self.value is not None else ""
         )
@@ -46,6 +48,8 @@ class Token:
 
 @dataclass(slots=True, order=True)
 class Zone:
+    """Parsed zone metadata used for validation and simulation."""
+
     kind: str
     name: str
     x: int
@@ -61,6 +65,7 @@ class Zone:
         return hash(self.name)
 
     def __str__(self) -> str:
+        """Return the zone name as its string representation."""
         return self.name
 
     def __repr__(self) -> str:
@@ -69,6 +74,8 @@ class Zone:
 
 @dataclass(slots=True, frozen=True)
 class Connection:
+    """Validate Connection metadata"""
+
     zone_a: Zone
     zone_b: Zone
 
@@ -78,21 +85,29 @@ class Connection:
 
     @property
     def name(self) -> str:
+        """Return a human-readable name for the connection."""
         return f"{self.zone_a.name}-{self.zone_b.name}"
 
     @property
     def max_drones(self) -> int:
+        """Return the maximum number of drones allowed on the connection."""
         return self.max_link_capacity
 
     @property
     def x(self) -> float:
+        """Return the connection's midpoint X coordinate."""
         return (self.zone_a.x + self.zone_b.x) / 2
 
     @property
     def y(self) -> float:
+        """Return the connection's midpoint Y coordinate."""
         return (self.zone_a.y + self.zone_b.y) / 2
 
     def get_other(self, zone: Zone) -> Zone:
+        """Given one endpoint Zone, return the opposite Zone.
+
+        Raises ValueError if the supplied zone is not part of the connection.
+        """
         if zone not in self:
             raise ValueError(f"{zone.name} not in {self.name}")
         if zone is self.zone_a:
@@ -100,11 +115,13 @@ class Connection:
         return self.zone_a
 
     def __contains__(self, item: Any) -> bool:
+        """Return True if `item` is one of the connection endpoints."""
         if not isinstance(item, Zone):
             return False
         return item in (self.zone_a, self.zone_b)
 
     def __iter__(self) -> Iterator[Zone]:
+        """Iterate over the two endpoint zones of the connection."""
         return iter((self.zone_a, self.zone_b))
 
     def __str__(self) -> str:
@@ -116,6 +133,8 @@ class Connection:
 
 @dataclass(slots=True, frozen=True)
 class UnvalidatedConnection:
+    """Unvalidated Connection metadata"""
+
     zone_a: str
     zone_b: str
 
@@ -137,6 +156,8 @@ class UnvalidatedConnection:
 
 @dataclass(slots=True)
 class Map:
+    """Map object holding information for use in simulation"""
+
     nb_drones: int
     start_hub: Zone
     end_hub: Zone

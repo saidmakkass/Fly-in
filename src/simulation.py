@@ -6,7 +6,9 @@ from .classes import Graph, ReservationTable, Path
 
 
 class Simulation:
+    """Run the drone routing simulation over a validated Map."""
     def __init__(self, map: Map):
+        """Initialize simulation state from a `Map` object."""
         self.nb_drones = map.nb_drones
         self.start_hub = map.start_hub
         self.end_hub = map.end_hub
@@ -14,6 +16,7 @@ class Simulation:
         self.reservation_table = ReservationTable()
 
     def __get_path(self) -> Path:
+        """Compute the next available Path for a drone."""
         dist = {self.start_hub: 0}
         prev: Dict[Zone, Tuple[Zone, Connection]] = {}
         queue = [(0, 0, self.start_hub)]
@@ -52,6 +55,13 @@ class Simulation:
         return path
 
     def run(self) -> Dict[int, Dict[int, Zone | Connection]]:
+        """Run the full simulation.
+
+        Returns a dict where keys are turns and
+        values are dicts mapping drone id
+        to the `Zone` or `Connection`
+        they occupy at that turn.
+        """
         output: Dict[int, Dict[int, Zone | Connection]] = {0: {}}
         for d in range(1, self.nb_drones + 1):
             output[0][d] = self.start_hub

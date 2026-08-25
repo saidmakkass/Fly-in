@@ -8,12 +8,18 @@ VALID_ZONE_TYPES = ["normal", "blocked", "restricted", "priority"]
 
 
 class Validator:
+    """Validate parsed map data and produce a `Map` object.
+
+    Performs checks on zones and connections and enforces graph invariants.
+    """
+
     def __init__(
         self,
         nb_drones: int,
         zones: List[Zone],
         connections: List[UnvalidatedConnection],
     ):
+        """Initialize validator with parsed zones and connections."""
         self.nb_drones = nb_drones
         self.zones = zones
         self.connections = connections
@@ -22,6 +28,7 @@ class Validator:
         self.end_hub: Zone | None = None
 
     def __validate_zones(self) -> None:
+        """Validate zone definitions and metadata, set start/end hubs."""
         for zone in self.zones:
             if zone.kind == "start_hub":
                 if self.start_hub is not None:
@@ -58,6 +65,8 @@ class Validator:
             raise ValidationError(None, "Missing end_hub")
 
     def __validate_connections(self) -> List[Connection]:
+        """Validate connection declarations and
+        convert to Connection objects."""
         validated_connections = list()
         for connection in self.connections:
             if connection in validated_connections:
@@ -101,6 +110,7 @@ class Validator:
         return validated_connections
 
     def __validate_no_path(self, cons: List[Connection]) -> None:
+        """Ensure there exists a path from start_hub to end_hub."""
         assert isinstance(self.start_hub, Zone)
         assert isinstance(self.end_hub, Zone)
         stack: List[Zone] = [self.start_hub]
@@ -127,6 +137,7 @@ class Validator:
             raise ValidationError(self.end_hub.location, "No Path")
 
     def __validate_disconnected_graph(self, cons: List[Connection]) -> None:
+        """Ensure every zone is reachable from the start hub."""
         assert isinstance(self.start_hub, Zone)
         assert isinstance(self.end_hub, Zone)
         stack: List[Zone] = [self.start_hub]
@@ -153,10 +164,12 @@ class Validator:
                 raise ValidationError(zone.location, "Disconnected Graph")
 
     def __validate_graph(self, cons: List[Connection]) -> None:
+        """Run graph-level validations (path presence and connectivity)."""
         self.__validate_no_path(cons)
         self.__validate_disconnected_graph(cons)
 
     def validate(self) -> Map:
+        """Run all validations and return a fully validated `Map` object."""
         self.__validate_zones()
         validated_connections = self.__validate_connections()
         self.__validate_graph(validated_connections)

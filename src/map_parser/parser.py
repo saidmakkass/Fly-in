@@ -5,16 +5,24 @@ from .errors import ParsingError
 
 
 class Parser:
+    """Parse a token stream into zones and unvalidated connections.
+
+    Usage: create with a token list and call `parse()` to obtain
+    (nb_drones, zones, connections).
+    """
     def __init__(self, tokens: List[Token]):
+        """Initialize parser state with a list of tokens."""
         self.tokens = tokens
         self.pos: int = 0
         self.zones: List[Zone] = list()
         self.connections: List[UnvalidatedConnection] = list()
 
     def __peek(self, offset: int = 0) -> Token:
+        """Return the token at current position + offset without consuming."""
         return self.tokens[self.pos + offset]
 
     def __advance(self) -> None:
+        """Advance the current token position unless at EOF."""
         token = self.__peek()
         if token.type != TokenType.EOF:
             self.pos += 1
@@ -22,6 +30,11 @@ class Parser:
     def __expect(
         self, type: TokenType, value: str | int | None = None
     ) -> Token:
+        """Assert the next token matches `type` (and optional `value`).
+
+        Advances and returns the token on success,
+        raises ParsingError otherwise.
+        """
         token = self.__peek()
         if token.type != type:
             raise ParsingError(
@@ -38,6 +51,7 @@ class Parser:
         return token
 
     def __parse_nb_drones(self) -> int:
+        """Parse and return the number of drones from the token stream."""
         self.__expect(TokenType.IDENTIFIER, "nb_drones")
         self.__expect(TokenType.COLON)
         self.__expect(TokenType.SPACE)
@@ -50,6 +64,7 @@ class Parser:
         return nb_drones
 
     def __parse_Zone(self, zone_location: Location, kind: str = "hub") -> Zone:
+        """Parse a Zone definition and return a `Zone` object."""
         name: str
         x: int
         y: int
@@ -151,6 +166,8 @@ class Parser:
     def __parse_connection(
         self, connection_location: Location
     ) -> UnvalidatedConnection:
+        """Parse a connection definition and
+        return an UnvalidatedConnection."""
         zone_a: str
         zone_b: str
         max_link_capacity: int = 1
@@ -195,6 +212,8 @@ class Parser:
         )
 
     def parse(self) -> Tuple[int, List[Zone], List[UnvalidatedConnection]]:
+        """Parse the full token stream and
+        return (nb_drones, zones, connections)."""
 
         nb_drones = self.__parse_nb_drones()
         self.__expect(TokenType.NEWLINE)

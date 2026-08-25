@@ -6,6 +6,10 @@ from .validator import Validator
 
 
 def load_map(file_path: str) -> Map:
+    """Load and validate a map file, returning a `Map` object.
+
+    Raises ValueError on I/O errors and map_parser errors for format issues.
+    """
     try:
         with open(file_path, "r") as f:
             file_lines = f.readlines()

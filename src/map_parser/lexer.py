@@ -5,6 +5,12 @@ from .errors import LexingError
 
 
 class Lexer:
+    """Simple lexer turning file lines into a stream of tokens.
+
+    Args:
+        file_lines: Lines of the input file to tokenize.
+        file_path: Path used for token locations.
+    """
     def __init__(self, file_lines: List[str], file_path: str):
         self.lines = file_lines
         self.file_path = file_path
@@ -13,6 +19,7 @@ class Lexer:
         self.eof = False
 
     def __peek(self) -> str:
+        """Return the current character without advancing; empty on EOF."""
         if not self.lines:
             return ""
         if self.eof or not self.lines[self.line - 1].strip():
@@ -20,6 +27,7 @@ class Lexer:
         return self.lines[self.line - 1][self.column - 1]
 
     def __advance(self) -> None:
+        """Advance the current position by one character, updating EOF."""
         if self.eof:
             return
         line_length = len(self.lines[self.line - 1])
@@ -33,6 +41,7 @@ class Lexer:
                 self.column = line_length + 1
 
     def __read_space(self) -> bool:
+        """Consume whitespace."""
         create_token = False
         while not self.eof:
             char = self.__peek()
@@ -47,6 +56,7 @@ class Lexer:
         return create_token
 
     def __read_identifier(self) -> str:
+        """Read an identifier (until a delimiter) and return it."""
         identifier = ""
         while True:
             char = self.__peek()
@@ -57,6 +67,7 @@ class Lexer:
         return identifier
 
     def __read_name(self) -> str:
+        """Read a name token (allows spaces until dash or newline)."""
         name = ""
         while True:
             char = self.__peek()
@@ -67,6 +78,7 @@ class Lexer:
         return name
 
     def __read_integer(self) -> int:
+        """Read an integer token and return it; raise on invalid digits."""
         integer = ""
         token_location = Location(self.file_path, self.line, self.column)
         while True:
@@ -83,10 +95,12 @@ class Lexer:
         return int(integer)
 
     def __read_comment(self) -> None:
+        """Skip characters until the end of the current line."""
         while not self.eof and self.__peek() != "\n":
             self.__advance()
 
     def evaluate(self) -> List[Token]:
+        """Tokenize the input lines and return the list of tokens."""
         if not self.lines:
             raise LexingError(Location(self.file_path, 1, 1), "Empty File")
         output: List[Token] = list()

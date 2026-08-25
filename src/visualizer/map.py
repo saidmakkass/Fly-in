@@ -16,6 +16,8 @@ from .constants import (
 
 
 class Zone(arcade.Sprite):
+    """Visual Zone representing a node in the map."""
+
     back = shapes.Group(0)
     front = shapes.Group(1)
 
@@ -54,6 +56,7 @@ class Zone(arcade.Sprite):
         sprite_list.append(self)
 
     def __rainbow_shapes(self, *s: tuple) -> tuple:
+        """Return shape list for rainbow-colored zones."""
         l3 = []
         arc_angle = 360 / len(RAINBOW)
 
@@ -75,6 +78,7 @@ class Zone(arcade.Sprite):
         return s + tuple(l3)
 
     def get_shapes(self, color: str) -> tuple:
+        """Create and return the shape primitives for this zone."""
         try:
             border_color = name_to_rgb(color)
         except ValueError:
@@ -111,6 +115,7 @@ class Zone(arcade.Sprite):
         return s1, s2, s3
 
     def resize(self) -> None:
+        """Recompute sprite positions and apply scaling to shapes."""
         sx, sy = self.scaler.scale(self.x, self.y)
         self.center_x, self.center_y = sx, sy
         for shape in self.shapes:
@@ -119,6 +124,8 @@ class Zone(arcade.Sprite):
 
 
 class Connection(arcade.Sprite):
+    """Visual Connection representing an edge between two zones."""
+
     type = "connection"
 
     def __init__(
@@ -149,6 +156,7 @@ class Connection(arcade.Sprite):
         self.sprite_list.append(self)
 
     def get_shape(self) -> shapes.Line:
+        """Create and return the line shape for this connection."""
         s1 = shapes.Line(
             self.start_x,
             self.start_y,
@@ -161,6 +169,7 @@ class Connection(arcade.Sprite):
         return s1
 
     def resize(self) -> None:
+        """Recompute connection geometry according to the scaler."""
         x1, y1 = self.scaler.scale(self.start_x, self.start_y)
         x2, y2 = self.scaler.scale(self.end_x, self.end_y)
         dx = x2 - x1
@@ -175,7 +184,10 @@ class Connection(arcade.Sprite):
 
 
 class Popup:
+    """Popup UI to show information about a Zone or Connection."""
+
     def __init__(self, parent_group: shapes.Group):
+        """Create popup rendering groups and initial text fields."""
         self.back = shapes.Group(0, parent_group)
         self.front = shapes.Group(1, parent_group)
         self.batch = shapes.Batch()
@@ -196,6 +208,7 @@ class Popup:
         }
 
     def update(self, x: float, y: float, spot: Zone | Connection) -> None:
+        """Update popup contents and geometry for `spot` at (x, y)."""
         if not isinstance(spot, (Zone, Connection)):
             self.active = False
             return
@@ -219,12 +232,15 @@ class Popup:
         self.background.height = 14 * 7
 
     def draw(self) -> None:
+        """Draw the popup if it is active."""
         if not self.active:
             return
         self.batch.draw()
 
 
 class Map:
+    """The visual Map object rendered to the screen."""
+
     back = shapes.Group(100)
     front = shapes.Group(101)
 
@@ -254,16 +270,19 @@ class Map:
         self.resize()
 
     def draw(self) -> None:
+        """Resize and draw the map and optional popup."""
         self.resize()
         self.batch.draw()
         if self.toggles["popup"]:
             self.popup.draw()
 
     def resize(self) -> None:
+        """Resize all spots using the current scaler settings."""
         for spot in self.spots.values():
             spot.resize()
 
     def collision_check(self, mouse: arcade.Sprite) -> None:
+        """Check mouse collisions and update popup accordingly."""
         if not self.toggles["popup"]:
             return
         hit = arcade.check_for_collision_with_list(mouse, self.sprite_list)

@@ -4,6 +4,14 @@ from .map_parser import Zone, Connection
 
 
 class Graph:
+    """Graph of zones and connections with neighbor lookup.
+
+    Attributes:
+        zones: List of zones in the graph.
+        connections: List of connections between zones.
+        nb_drones: Number of drones in the simulation.
+        neighbors: Mapping from a zone to its neighbor zones and connection.
+    """
     def __init__(
         self, zones: List[Zone], cons: List[Connection], nb_drones: int
     ) -> None:
@@ -13,6 +21,7 @@ class Graph:
         self.neighbors = self.__build_neighbors()
 
     def __build_neighbors(self) -> Dict[Zone, List[Tuple[Zone, Connection]]]:
+        """Build neighbor mapping for each zone."""
         output: Dict[Zone, List[Tuple[Zone, Connection]]] = dict()
         for zone in self.zones:
             neighbors = output.setdefault(zone, list())
@@ -28,16 +37,26 @@ class Graph:
 
 
 class ReservationTable:
+    """Simple reservation table to track occupancy per turn and spot.
+
+    The table maps turns to counts of reservations for each zone/connection.
+    """
     def __init__(self) -> None:
+        """Initialize an empty reservation table."""
         self.__table: Dict[int, Dict[Zone | Connection, int]] = dict()
 
     def reserve(self, turn: int, spot: Zone | Connection) -> bool:
+        """Reserve `spot` at `turn` if capacity allows.
+
+        Returns True on success, False if already fully reserved.
+        """
         if self.is_reserved(turn, spot):
             return False
         self.__table[turn][spot] += 1
         return True
 
     def is_reserved(self, turn: int, spot: Zone | Connection) -> bool:
+        """Return True if `spot` is at or above its max capacity on `turn`."""
         res = self.__table.setdefault(turn, dict()).setdefault(spot, 0)
         if res >= spot.max_drones:
             return True
@@ -54,8 +73,9 @@ class ReservationTable:
 
 
 class Path:
-
+    """The generated Path of a Drone"""
     def __init__(self) -> None:
+        """Create an empty path mapping."""
         self.path: Dict[int, Zone | Connection] = dict()
 
     def reconstruct(
@@ -66,6 +86,11 @@ class Path:
         end: Zone,
         reservation_table: ReservationTable,
     ) -> None:
+        """Reconstruct the path from `prev`/`dist` and reserve spots.
+
+        Updates `self.path` with a mapping turn -> Zone|Connection and
+        populates the `reservation_table` accordingly.
+        """
         path: Dict[int, Zone | Connection] = dict()
         cur = end
         while cur is not start:
