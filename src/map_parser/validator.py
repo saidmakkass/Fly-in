@@ -100,9 +100,62 @@ class Validator:
             )
         return validated_connections
 
+    def __validate_no_path(self, cons: List[Connection]):
+        stack = [self.start_hub]
+        visited = {
+            self.start_hub,
+        }
+
+        while stack:
+            neighbors = []
+            for con in cons:
+                if stack[-1] in con:
+                    neighbor = con.get_other(stack[-1])
+                    if neighbor in visited or neighbor.type == "blocked":
+                        continue
+                    neighbors.append(neighbor)
+            if not neighbors:
+                stack.pop()
+                continue
+            for neighbor in neighbors:
+                stack.append(neighbor)
+                visited.add(neighbor)
+        if self.end_hub not in visited:
+            print(visited)
+            raise ValidationError(self.end_hub.location, f"No Path")
+
+    def __validate_disconnected_graph(self, cons: List[Connection]):
+        stack = [self.start_hub]
+        visited = {
+            self.start_hub,
+        }
+
+        while stack:
+            neighbors = []
+            for con in cons:
+                if stack[-1] in con:
+                    neighbor = con.get_other(stack[-1])
+                    if neighbor in visited:
+                        continue
+                    neighbors.append(neighbor)
+            if not neighbors:
+                stack.pop()
+                continue
+            for neighbor in neighbors:
+                stack.append(neighbor)
+                visited.add(neighbor)
+        for zone in self.zones:
+            if zone not in visited:
+                raise ValidationError(zone.location, f"Disconnected Graph")
+
+    def __validate_graph(self, cons: List[Connection]):
+        self.__validate_no_path(cons)
+        self.__validate_disconnected_graph(cons)
+
     def validate(self) -> Map:
         self.__validate_zones()
         validated_connections = self.__validate_connections()
+        self.__validate_graph(validated_connections)
         assert isinstance(self.start_hub, Zone)
         assert isinstance(self.end_hub, Zone)
         return Map(
