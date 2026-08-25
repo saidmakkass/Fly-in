@@ -1,6 +1,6 @@
+*This project has been created as part of the 42 curriculum by smakkass.*
 # Drone Routing Simulator
 
-*This project has been created as part of the 42 curriculum by smakkass.*
 
 Simulate and visualize drone routing on a user-defined map, ensuring safe, capacity-aware, and collision-free schedules.
 
