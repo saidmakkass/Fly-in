@@ -17,7 +17,7 @@ class Drone(arcade.Sprite):
         self.center_x = 0.0
         self.center_y = 0.0
         self.spot = start
-        self.spot.count += 1
+        self.spot.drones.append(self)
         self.offset_x = 0.0
         self.offset_y = 0.0
         self.set_target(start)
@@ -31,22 +31,24 @@ class Drone(arcade.Sprite):
     def target_y(self) -> float:
         return self.spot.center_y
 
-    def set_offset(self, count: int) -> None:
+    def set_offset(self) -> None:
+        count = len(self.spot.drones)
+        index = self.spot.drones.index(self)
         if count <= 1:
             self.offset_x = 0.0
             self.offset_y = 0.0
             return
 
-        angle = (2 * math.pi * self.id) / count
+        angle = (2 * math.pi * index) / count
         radius = ZONE_RADIUS
         self.offset_x = radius * math.sin(angle)
         self.offset_y = radius * math.cos(angle)
 
     def set_target(self, target: Zone | Connection) -> None:
         if self.spot:
-            self.spot.count -= 1
+            self.spot.drones.remove(self)
         self.spot = target
-        self.spot.count += 1
+        self.spot.drones.append(self)
 
     def update_animation(self, delta_time: float = 1 / 60) -> None:
         return
@@ -93,7 +95,7 @@ class Fleet:
             spot = self.map.spots[spot_name]
             drone.set_target(spot)
         for drone in self.drones:
-            drone.set_offset(drone.spot.count)
+            drone.set_offset()
 
     def update(self, delta_time: float) -> None:
         self.drones.update(delta_time)

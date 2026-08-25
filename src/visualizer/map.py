@@ -2,7 +2,7 @@ import arcade
 import math
 from pyglet import shapes
 from webcolors import name_to_rgb
-from typing import Dict
+from typing import Dict, List
 
 from .converter import Graph
 from .scaler import Scaler
@@ -40,7 +40,7 @@ class Zone(arcade.Sprite):
         self.sprite_list = sprite_list
         self.batch = batch
         self.shapes = self.get_shapes(color)
-        self.count = 0
+        self.drones: List = []
         super().__init__(scale=0)
         self.hit_box = arcade.hitbox.HitBox(
             [
@@ -144,7 +144,7 @@ class Connection(arcade.Sprite):
         self.sprite_list = sprite_list
         self.batch = batch
         self.shape = self.get_shape()
-        self.count = 0
+        self.drones: List = []
 
         self.sprite_list.append(self)
 
@@ -206,7 +206,7 @@ class Popup:
 
         name.text = f"Name: {spot.name}"
         type.text = f"Type: {spot.type}"
-        drones.text = f"Drones: {spot.count}/{spot.max_drones}"
+        drones.text = f"Drones: {len(spot.drones)}/{spot.max_drones}"
 
         max_width = max(t.content_width for t in self.text.values())
 
