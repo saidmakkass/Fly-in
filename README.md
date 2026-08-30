@@ -25,7 +25,7 @@ make run
 
 **Direct run (Python)**
 ```bash
-python -m src --map <path-to-map>
+uv run python -m src --map <path-to-map>
 ```
 
 ---
